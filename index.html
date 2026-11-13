@@ -226,6 +226,56 @@
   body.locked .view, body.locked .fab-row { visibility: hidden; }
   .danger-text { color: var(--danger) !important; }
 
+  /* Avatars */
+  .avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 15px; letter-spacing: .02em; color: #1a1915; }
+  .card-head.has-avatar { align-items: center; }
+  .card-head.has-avatar h2 { flex: 1; min-width: 0; }
+
+  /* Beweging */
+  @keyframes viewIn { from { opacity: 0; transform: translateX(26px); } }
+  @keyframes viewBack { from { opacity: 0; transform: translateX(-26px); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } }
+  @keyframes fadeIn { from { opacity: 0; } }
+  @keyframes sheetUp { from { opacity: 0; transform: translateY(40px); } }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 14px); } }
+  .view.anim-fwd main { animation: viewIn .3s cubic-bezier(.2,.8,.2,1) both; }
+  .view.anim-back main { animation: viewBack .3s cubic-bezier(.2,.8,.2,1) both; }
+  .list.stagger > li { animation: fadeUp .38s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+  .backdrop { animation: fadeIn .18s both; }
+  .dialog { animation: sheetUp .28s cubic-bezier(.2,.8,.2,1) both; }
+  .toast { animation: toastIn .25s cubic-bezier(.2,.8,.2,1) both; }
+  .lock-inner { animation: fadeUp .3s cubic-bezier(.2,.8,.2,1) both; }
+  .fab-row { animation: fadeUp .4s .1s cubic-bezier(.2,.8,.2,1) both; }
+  .tabs button { transition: background-color .2s, color .2s; }
+  .fab, .primary, .secondary, .chip, .mic, .keypad button, .place, .dialog-actions button { transition: transform .1s ease, background-color .2s; }
+  .fab:active, .primary:active, .secondary:active, .chip:active, .mic:active, .keypad button:active, .place:active, .dialog-actions button:active { transform: scale(.96); }
+  .keypad button:active { background: var(--accent-soft); }
+  .pin-dots i { transition: background-color .12s, border-color .12s, transform .12s; }
+  .pin-dots i.on { transform: scale(1.15); }
+
+  /* Geluidsgolf tijdens inspreken */
+  .wave { display: block; width: 100%; height: 64px; margin-top: 12px; color: var(--link); }
+
+  /* Opstartscherm */
+  .splash {
+    position: fixed; inset: 0; z-index: 90; background: var(--bg); pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    animation: splashOut .35s .8s ease forwards;
+  }
+  .splash-logo { display: flex; align-items: center; gap: 9px; height: 88px; }
+  .splash-logo i { width: 13px; height: var(--h); border-radius: 7px; background: var(--link); animation: splashBar .6s cubic-bezier(.2,.8,.2,1) both; }
+  .splash-logo i:nth-child(1) { --h: 30px; }
+  .splash-logo i:nth-child(2) { --h: 60px; animation-delay: .06s; }
+  .splash-logo i:nth-child(3) { --h: 88px; animation-delay: .12s; }
+  .splash-logo i:nth-child(4) { --h: 60px; animation-delay: .18s; }
+  .splash-logo i:nth-child(5) { --h: 30px; animation-delay: .24s; }
+  .splash-name { font-weight: 700; font-size: 21px; letter-spacing: -.01em; animation: fadeUp .5s .2s both; }
+  @keyframes splashBar { from { height: 8px; opacity: .2; } }
+  @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+  }
+
   /* Dialog + toast */
   .backdrop {
     position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45);
@@ -255,6 +305,10 @@
 <body>
 
 <script>try { if (localStorage.getItem('wiewasdat.pin.v1')) document.body.classList.add('locked'); } catch (e) {}</script>
+<div id="splash" class="splash" aria-hidden="true">
+  <div class="splash-logo"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="splash-name">Persoonlijk logboek</div>
+</div>
 
 <!-- ===== Lijst ===== -->
 <section id="view-list" class="view">
@@ -345,6 +399,7 @@
     <div class="tool-row">
       <button id="btn-summarize" class="chip" type="button">✨ Opschonen</button>
     </div>
+    <canvas id="wave" class="wave" aria-hidden="true" hidden></canvas>
     <p id="listening" class="listening" aria-live="polite" hidden></p>
     <p id="speech-hint" class="hint" hidden></p>
     <p id="edit-error" class="error" role="alert" hidden></p>
@@ -925,8 +980,18 @@
   // ---------- Schermen ----------
 
   const views = { list: $('view-list'), edit: $('view-edit'), settings: $('view-settings') };
+  let currentView = '';
   function showView(name) {
-    for (const k in views) views[k].hidden = k !== name;
+    const back = name === 'list' && currentView && currentView !== 'list';
+    for (const k in views) {
+      views[k].hidden = k !== name;
+      views[k].classList.remove('anim-fwd', 'anim-back');
+    }
+    if (currentView && currentView !== name) {
+      void views[name].offsetWidth; // animatie opnieuw laten starten
+      views[name].classList.add(back ? 'anim-back' : 'anim-fwd');
+    }
+    currentView = name;
     $('fab-row').hidden = name !== 'list';
     window.scrollTo(0, 0);
   }
@@ -1004,10 +1069,10 @@
     sel.replaceChildren(...SORTS[tab].map(([v, label]) => { const o = el('option', null, label); o.value = v; return o; }));
     const cur = viewState.sort[tab];
     sel.value = SORTS[tab].some(s => s[0] === cur) ? cur : SORTS[tab][0][0];
-    render();
+    render(true);
   }
   for (const b of document.querySelectorAll('.tabs button')) b.addEventListener('click', () => setTab(b.dataset.tab));
-  $('sort').addEventListener('change', () => { viewState.sort[viewState.tab] = $('sort').value; saveViewState(); render(); });
+  $('sort').addEventListener('change', () => { viewState.sort[viewState.tab] = $('sort').value; saveViewState(); render(true); });
 
   /** Sorteert en (optioneel) groepeert; geeft [{label, items}] terug. */
   function arrange(list, by) {
@@ -1051,6 +1116,23 @@
     if (pos < text.length) node.append(document.createTextNode(text.slice(pos)));
   }
 
+  /** Initialen: eerste letter van het eerste en het laatste woord ("Jan de Vries" -> "JV"). */
+  function initials(name) {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return '?';
+    const first = Array.from(words[0])[0];
+    const last = words.length > 1 ? Array.from(words[words.length - 1])[0] : '';
+    return (first + last).toUpperCase();
+  }
+
+  /** Vaste pasteltint per naam (zelfde naam = zelfde kleur). */
+  function avatarColor(name) {
+    let h = 7;
+    for (const ch of C.fold(name)) h = (h * 33 + ch.codePointAt(0)) % 100003;
+    const hue = Math.round((h * 137.508) % 360); // gulden hoek: tinten ver uit elkaar
+    return 'hsl(' + hue + ' 70% 80%)';
+  }
+
   function actionButton(label, aria, fn, cls) {
     const b = el('button', cls || null, label);
     b.type = 'button';
@@ -1068,6 +1150,13 @@
     setHighlighted(h, title, toks);
     const t = el('time', null, story ? fmtLongDay.format(ymdToDate(dayOf(r))) : fmt(r.createdAt));
     t.dateTime = story ? dayOf(r) : r.createdAt;
+    if (!story) {
+      head.classList.add('has-avatar');
+      const av = el('span', 'avatar', initials(r.naam));
+      av.style.background = avatarColor(r.naam);
+      av.setAttribute('aria-hidden', 'true');
+      head.append(av);
+    }
     head.append(h, t);
     li.append(head);
 
@@ -1120,7 +1209,7 @@
   }
   $('place-filter-clear').addEventListener('click', () => setPlaceFilter(''));
 
-  function render() {
+  function render(animate) {
     const tab = viewState.tab;
     const story = tab === 'verhaal';
     const q = $('search').value;
@@ -1134,6 +1223,8 @@
       if (g.label) nodes.push(el('li', 'group-head', g.label + ' · ' + g.items.length));
       for (const r of g.items) nodes.push(renderCard(r, toks));
     }
+    nodes.forEach((n, i) => n.style.setProperty('--i', Math.min(i, 12)));
+    $('list').classList.toggle('stagger', animate === true);
     $('list').replaceChildren(...nodes);
     $('search-clear').hidden = !q;
     $('place-filter').hidden = story || !placeFilter;
@@ -1161,7 +1252,7 @@
     }
   }
 
-  $('search').addEventListener('input', render);
+  $('search').addEventListener('input', () => render());
   $('search').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   $('search-clear').addEventListener('click', () => { $('search').value = ''; render(); $('search').focus(); });
 
@@ -1260,7 +1351,7 @@
     stopDictation(true);
     if (isDirty() && !(await confirmDialog('Wijzigingen weggooien?', 'Wat je hebt ingesproken of getypt wordt niet bewaard.', 'Weggooien', 'danger'))) return;
     showView('list');
-    render();
+    render(true);
   }
 
   function showEditError(msg, field) {
@@ -1318,7 +1409,7 @@
     if (viewState.tab !== editKind) setTab(editKind);
     $('search').value = '';
     showView('list');
-    render();
+    render(true);
     toast('Opgeslagen');
     scheduleAutoSync();
   }
@@ -1384,6 +1475,84 @@
     return out;
   }
 
+  // ---------- Geluidsgolf ----------
+  // Computer: echt stemvolume via de microfoon. Telefoon/tablet: de microfoon kan daar niet
+  // tegelijk door spraakherkenning en een meter gebruikt worden, dus daar beweegt de golf
+  // mee met wat de spraakherkenning oppikt.
+  const wave = { canvas: $('wave'), raf: 0, energy: 0, target: 0, stream: null, audio: null, analyser: null, data: null, color: '' };
+  const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const canMeterMic = !('ontouchstart' in window) && !(navigator.maxTouchPoints > 0) && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && !!AudioCtx;
+
+  function startWave() {
+    wave.canvas.hidden = false;
+    wave.color = getComputedStyle(wave.canvas).color;
+    wave.energy = 0;
+    wave.target = 0.2;
+    if (canMeterMic && !wave.stream) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        if (!dict) { stream.getTracks().forEach(t => t.stop()); return; } // al gestopt
+        wave.stream = stream;
+        wave.audio = new AudioCtx();
+        wave.analyser = wave.audio.createAnalyser();
+        wave.analyser.fftSize = 256;
+        wave.audio.createMediaStreamSource(stream).connect(wave.analyser);
+        wave.data = new Uint8Array(wave.analyser.fftSize);
+      }).catch(() => { /* geen meter: de golf volgt dan de herkenning */ });
+    }
+    if (!wave.raf) wave.raf = requestAnimationFrame(drawWave);
+  }
+
+  function stopWave() {
+    cancelAnimationFrame(wave.raf);
+    wave.raf = 0;
+    wave.canvas.hidden = true;
+    if (wave.stream) { wave.stream.getTracks().forEach(t => t.stop()); wave.stream = null; }
+    if (wave.audio) { wave.audio.close().catch(() => {}); wave.audio = null; wave.analyser = null; }
+  }
+
+  /** Geeft de golf een zetje (bij nieuwe woorden van de spraakherkenning). */
+  function bumpWave(amount) { wave.target = Math.min(1, Math.max(wave.target, amount)); }
+
+  function drawWave(ts) {
+    wave.raf = requestAnimationFrame(drawWave);
+    const c = wave.canvas;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+
+    if (wave.analyser) {
+      wave.analyser.getByteTimeDomainData(wave.data);
+      let sum = 0;
+      for (let i = 0; i < wave.data.length; i++) { const d = (wave.data[i] - 128) / 128; sum += d * d; }
+      wave.target = Math.min(1, Math.sqrt(sum / wave.data.length) * 5);
+    } else {
+      wave.target = Math.max(0.1, wave.target * 0.955); // langzaam terug naar rust
+    }
+    wave.energy += (wave.target - wave.energy) * 0.2;
+
+    const step = 7, barW = 4;
+    const bars = Math.max(8, Math.floor(w / step));
+    const x0 = (w - bars * step + (step - barW)) / 2;
+    const t = ts / 1000;
+    g.fillStyle = wave.color;
+    for (let i = 0; i < bars; i++) {
+      const envelope = Math.pow(Math.sin(Math.PI * (i + 0.5) / bars), 0.7); // randen lopen uit
+      const wobble = 0.55 + 0.45 * Math.sin(t * 7 + i * 0.6) * Math.sin(t * 2.6 + i * 0.23);
+      const amp = reduceMotion ? 0.3 * envelope : (0.06 + wave.energy * wobble) * envelope;
+      const bh = Math.max(3, amp * (h - 4));
+      const x = x0 + i * step, y = (h - bh) / 2;
+      g.globalAlpha = 0.45 + 0.55 * envelope;
+      if (g.roundRect) { g.beginPath(); g.roundRect(x, y, barW, bh, 2); g.fill(); }
+      else g.fillRect(x, y, barW, bh);
+    }
+    g.globalAlpha = 1;
+  }
+
   /** Na het inspreken: naam/plek herkennen (snel inspreken) en de tekst opschonen. Met ongedaan maken. */
   function afterDictation(rec, field, base, sep, spoken) {
     if (rec.skipClean || !spoken || field.value !== base + sep + spoken) return; // tussendoor zelf getypt: niet aankomen
@@ -1427,9 +1596,12 @@
     let spoken = '';
     rec.onresult = e => {
       spoken = joinResults(e.results);
+      bumpWave(0.95);
       field.value = spoken ? base + sep + spoken : base;
       if (field.tagName === 'TEXTAREA') field.scrollTop = field.scrollHeight;
     };
+    rec.onsoundstart = () => bumpWave(0.4);
+    rec.onspeechstart = () => bumpWave(0.65);
     rec.onerror = e => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') showSpeechHint('Geen toegang tot spraakherkenning of microfoon.');
       else if (e.error === 'audio-capture') showSpeechHint('Geen microfoon gevonden.');
@@ -1450,7 +1622,7 @@
     setListening(field === fNotitie && editKind === 'verhaal'
       ? 'Luisteren… vertel rustig. Tik op Stop als je klaar bent.'
       : 'Luisteren… tik op Stop als je klaar bent.');
-    try { rec.start(); } catch (e) { finishDictation(); showSpeechHint('Spraakherkenning kon niet starten.'); }
+    try { rec.start(); startWave(); } catch (e) { finishDictation(); showSpeechHint('Spraakherkenning kon niet starten.'); }
   }
 
   function toggleDictation(btn) {
@@ -1472,6 +1644,7 @@
   }
   function finishDictation() {
     if (!dict) return;
+    stopWave();
     setMicState(dict.btn, false);
     setListening('');
     dict = null;
@@ -1706,7 +1879,7 @@
   }
 
   $('btn-settings').addEventListener('click', openSettings);
-  $('settings-back').addEventListener('click', () => { showView('list'); render(); });
+  $('settings-back').addEventListener('click', () => { showView('list'); render(true); });
   $('s-save').addEventListener('click', () => { if (saveSettings(false)) renderSyncStatus(); });
   $('s-auto').addEventListener('change', () => { if (saveSettings(true)) toast($('s-auto').checked ? 'Automatisch synchroniseren staat aan' : 'Automatisch synchroniseren staat uit'); });
   // Opschonen staat los van GitHub: direct bewaren, ook als de repo-velden (nog) niet kloppen.
@@ -1833,39 +2006,36 @@
 
   // ---------- App-icoon (canvas -> PNG) ----------
 
+  /** Icoon: vijf lichtblauwe geluidsbalkjes op een donkere achtergrond met zachte gloed. */
   function makeIcon() {
     const c = document.createElement('canvas');
     c.width = c.height = 180;
     const g = c.getContext('2d');
     if (!g) return null;
-    const grad = g.createLinearGradient(0, 0, 180, 180);
-    grad.addColorStop(0, '#2f2f2c');
-    grad.addColorStop(1, '#1b1b19');
-    g.fillStyle = grad;
+    const bg = g.createLinearGradient(0, 0, 180, 180);
+    bg.addColorStop(0, '#33332f');
+    bg.addColorStop(1, '#171715');
+    g.fillStyle = bg;
     g.fillRect(0, 0, 180, 180);
-    // Microfoonkop (afgeronde capsule)
+    const glow = g.createRadialGradient(60, 40, 0, 60, 40, 170);
+    glow.addColorStop(0, 'rgba(184,230,254,.22)');
+    glow.addColorStop(1, 'rgba(184,230,254,0)');
+    g.fillStyle = glow;
+    g.fillRect(0, 0, 180, 180);
+    const heights = [40, 78, 112, 78, 40];
+    const w = 18, gap = 12, x0 = (180 - (5 * w + 4 * gap)) / 2;
     g.fillStyle = '#b8e6fe';
-    const x = 70, y = 30, w = 40, h = 74, r = 20;
-    g.beginPath();
-    g.moveTo(x + r, y);
-    g.arcTo(x + w, y, x + w, y + h, r);
-    g.arcTo(x + w, y + h, x, y + h, r);
-    g.arcTo(x, y + h, x, y, r);
-    g.arcTo(x, y, x + w, y, r);
-    g.closePath();
-    g.fill();
-    // Beugel, steel en voet
-    g.strokeStyle = '#b8e6fe';
-    g.lineWidth = 9;
-    g.lineCap = 'round';
-    g.beginPath();
-    g.moveTo(125, 66);
-    g.lineTo(125, 80);
-    g.arc(90, 80, 35, 0, Math.PI, false);
-    g.lineTo(55, 66);
-    g.stroke();
-    g.beginPath(); g.moveTo(90, 115); g.lineTo(90, 140); g.stroke();
-    g.beginPath(); g.moveTo(66, 144); g.lineTo(114, 144); g.stroke();
+    heights.forEach((h, i) => {
+      const x = x0 + i * (w + gap), y = 90 - h / 2, r = w / 2;
+      g.beginPath();
+      g.moveTo(x + r, y);
+      g.arcTo(x + w, y, x + w, y + h, r);
+      g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r);
+      g.arcTo(x, y, x + w, y, r);
+      g.closePath();
+      g.fill();
+    });
     return c.toDataURL('image/png');
   }
 
@@ -1883,6 +2053,12 @@
   } catch (e) { /* icoon is niet essentieel */ }
 
   // ---------- Start ----------
+
+  const splash = $('splash');
+  if (splash) {
+    splash.addEventListener('animationend', e => { if (e.animationName === 'splashOut') splash.remove(); });
+    setTimeout(() => splash.remove(), 2500); // vangnet
+  }
 
   setTab(viewState.tab);
   showView('list');
