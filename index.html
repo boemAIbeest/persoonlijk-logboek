@@ -1368,7 +1368,7 @@
     return words.slice(0, 7).join(' ') + (words.length > 7 ? '…' : '');
   }
 
-  function saveEditor() {
+  function saveEditor(forceNew) {
     stopDictation(true);
     const now = new Date().toISOString();
     const text = fNotitie.value.trim();
@@ -1399,9 +1399,15 @@
       if (existing) {
         if (existing.naam !== naam || existing.waar !== fields.waar || existing.notitie !== text) Object.assign(existing, fields, { updatedAt: now });
       } else {
+        const dups = forceNew === true ? [] : findDuplicates(naam);
+        if (dups.length) { askDuplicate(dups, fields); return; }
         records.push(Object.assign({ id: newId(), soort: 'contact', titel: '', datum: '', createdAt: now, updatedAt: now, deleted: false }, fields));
       }
     }
+    finishSave('Opgeslagen');
+  }
+
+  function finishSave(message) {
     if (!persist()) {
       infoDialog('Opslaan mislukt', 'De opslag van dit apparaat is vol of geblokkeerd. Exporteer je gegevens als JSON via Instellingen.');
       return;
@@ -1410,8 +1416,50 @@
     $('search').value = '';
     showView('list');
     render(true);
-    toast('Opgeslagen');
+    toast(message);
     scheduleAutoSync();
+  }
+
+  /** Bestaande contacten met dezelfde naam (hoofdletters, accenten en spaties maken niet uit). */
+  function findDuplicates(naam) {
+    const key = n => C.fold(n).replace(/\s+/g, ' ').trim();
+    const want = key(naam);
+    return records
+      .filter(r => !r.deleted && r.soort === 'contact' && key(r.naam) === want)
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  }
+
+  /** Naam bestaat al: aanvullen bij de bestaande persoon, of toch een nieuw contact maken. */
+  async function askDuplicate(dups, fields) {
+    const d = dups[0];
+    const info = [
+      d.waar ? '📍 ' + d.waar : '',
+      d.notitie ? d.notitie.split('\n')[0].slice(0, 90) : '',
+      'Toegevoegd ' + fmtDay.format(new Date(d.createdAt)),
+      dups.length > 1 ? '(en nog ' + (dups.length - 1) + ' met dezelfde naam)' : ''
+    ].filter(Boolean).join('\n');
+    const choice = await dialog('“' + d.naam + '” bestaat al', info + '\n\nIs dit dezelfde persoon?', [
+      { label: 'Ja, vul aan bij bestaande', value: 'merge', kind: 'primary' },
+      { label: 'Nee, nieuw contact', value: 'new' },
+      { label: 'Annuleer', value: null }
+    ]);
+    if (choice === 'new') return saveEditor(true);
+    if (choice !== 'merge') return;
+
+    const stamp = fmtDay.format(new Date());
+    const otherPlace = fields.waar && C.fold(fields.waar) !== C.fold(d.waar);
+    let changed = false;
+    if (fields.notitie) {
+      const head = stamp + (otherPlace && d.waar ? ' · ' + fields.waar : '') + ':\n';
+      d.notitie = d.notitie ? d.notitie + '\n\n' + head + fields.notitie : fields.notitie;
+      changed = true;
+    } else if (otherPlace && d.waar) {
+      d.notitie = (d.notitie ? d.notitie + '\n\n' : '') + stamp + ': ook gezien bij ' + fields.waar;
+      changed = true;
+    }
+    if (fields.waar && !d.waar) { d.waar = fields.waar; changed = true; }
+    if (changed) d.updatedAt = new Date().toISOString();
+    finishSave(changed ? 'Aangevuld bij ' + d.naam : d.naam + ' stond er al – niets toegevoegd');
   }
 
   /** Knop "Opschonen": hele tekstveld netjes maken, met ongedaan maken. */
@@ -1427,8 +1475,8 @@
   $('btn-new').addEventListener('click', () => openEditor(null, 'new', viewState.tab));
   $('btn-quick').addEventListener('click', () => openEditor(null, 'new', viewState.tab, { quick: true }));
   $('edit-cancel').addEventListener('click', cancelEditor);
-  $('edit-save').addEventListener('click', saveEditor);
-  $('edit-save-top').addEventListener('click', saveEditor);
+  $('edit-save').addEventListener('click', () => saveEditor());
+  $('edit-save-top').addEventListener('click', () => saveEditor());
   $('btn-summarize').addEventListener('click', cleanField);
   fNaam.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); (fWaar.closest('[hidden]') ? fNotitie : fWaar).focus(); } });
   fWaar.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fNotitie.focus(); } });
@@ -1580,19 +1628,27 @@
     });
   }
 
-  function startDictation(btn, opts) {
+  /**
+   * Start met luisteren. In het tekstvak blijft de app luisteren tot je op Stop tikt:
+   * stopt de herkenning vanzelf (stilte of tijdslimiet), dan begint hij meteen opnieuw.
+   * Pas aan het echte einde wordt alles wat je insprak in één keer verwerkt en opgeschoond.
+   * `cont` = gegevens van de lopende opname bij zo'n herstart. Geeft true terug als het luisteren loopt.
+   */
+  function startDictation(btn, opts, cont) {
     const field = $(btn.dataset.target);
-    if (!SR) { showSpeechHint('Spraakherkenning is hier niet beschikbaar.'); field.focus(); return; }
+    if (!SR) { showSpeechHint('Spraakherkenning is hier niet beschikbaar.'); field.focus(); return false; }
     let rec;
-    try { rec = new SR(); } catch (e) { showSpeechHint('Spraakherkenning kon niet starten.'); field.focus(); return; }
+    try { rec = new SR(); } catch (e) { showSpeechHint('Spraakherkenning kon niet starten.'); field.focus(); return false; }
     rec.lang = 'nl-NL';
     rec.interimResults = true;
     rec.continuous = field.tagName === 'TEXTAREA';
     rec.maxAlternatives = 1;
-    rec.quick = !!(opts && opts.quick);
+    rec.quick = cont ? cont.quick : !!(opts && opts.quick);
 
     const base = field.value;
     const sep = base && !/\s$/.test(base) ? ' ' : '';
+    // Begin van de hele opname, over herstarts heen
+    const first = cont || { base, sep, quick: rec.quick, emptyRuns: 0 };
     let spoken = '';
     rec.onresult = e => {
       spoken = joinResults(e.results);
@@ -1603,26 +1659,33 @@
     rec.onsoundstart = () => bumpWave(0.4);
     rec.onspeechstart = () => bumpWave(0.65);
     rec.onerror = e => {
+      if (e.error === 'no-speech') return; // stilte: gewoon blijven luisteren
+      rec.fatal = true;
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') showSpeechHint('Geen toegang tot spraakherkenning of microfoon.');
       else if (e.error === 'audio-capture') showSpeechHint('Geen microfoon gevonden.');
       else if (e.error === 'network') showSpeechHint('Spraakherkenning heeft internet nodig.');
-      else if (e.error === 'no-speech') toast('Niets gehoord. Probeer het nog eens.');
     };
     rec.onend = () => {
-      afterDictation(rec, field, base, sep, spoken);
-      if (dict && dict.rec === rec) finishDictation();
-      // Zelf gestopt (stilte/tijdslimiet) terwijl je nog aan het vertellen was
-      if (!rec.userStopped && !rec.skipClean && field === fNotitie && spoken && editKind === 'verhaal') {
-        toast('Gestopt met luisteren. Tik op Spreek om verder te vertellen.');
+      const wasActive = !!dict && dict.rec === rec;
+      const stoppedByItself = wasActive && !rec.userStopped && !rec.fatal;
+      // Vanzelf gestopt in het tekstvak: opnieuw luisteren (maximaal 3 keer achter elkaar zonder dat er iets gezegd is)
+      const emptyRuns = spoken ? 0 : first.emptyRuns + 1;
+      if (stoppedByItself && field === fNotitie && !document.hidden && emptyRuns <= 3) {
+        if (startDictation(btn, null, { base: first.base, sep: first.sep, quick: first.quick, emptyRuns })) return;
       }
+      // Echt klaar: alles wat sinds het begin is ingesproken in één keer verwerken
+      const prefix = first.base + first.sep;
+      const total = field.value.startsWith(prefix) ? field.value.slice(prefix.length) : '';
+      afterDictation(rec, field, first.base, first.sep, total);
+      if (dict && dict.rec === rec) finishDictation();
+      if (stoppedByItself && field === fNotitie) toast('Gestopt met luisteren. Tik op Spreek om verder te gaan.');
     };
 
     dict = { rec, btn, field };
     setMicState(btn, true);
-    setListening(field === fNotitie && editKind === 'verhaal'
-      ? 'Luisteren… vertel rustig. Tik op Stop als je klaar bent.'
-      : 'Luisteren… tik op Stop als je klaar bent.');
-    try { rec.start(); startWave(); } catch (e) { finishDictation(); showSpeechHint('Spraakherkenning kon niet starten.'); }
+    setListening(field === fNotitie ? 'Luisteren… ik blijf luisteren tot je op Stop tikt.' : 'Luisteren… tik op Stop als je klaar bent.');
+    try { rec.start(); startWave(); } catch (e) { finishDictation(); showSpeechHint('Spraakherkenning kon niet starten.'); return false; }
+    return true;
   }
 
   function toggleDictation(btn) {
@@ -2051,6 +2114,12 @@
       }
     }
   } catch (e) { /* icoon is niet essentieel */ }
+
+  // ---------- Offline openen ----------
+  // sw.js bewaart een kopie van de app zelf (niet van je notities), zodat hij zonder internet opent.
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { /* dan zonder offline */ }); });
+  }
 
   // ---------- Start ----------
 

@@ -1,8 +1,9 @@
 # Persoonlijk logboek
 
-Twee onderdelen in één app: **Contacten** (wie heb je ontmoet, waar, wat moet je onthouden) en **Verhalen** (wat je zelf hebt meegemaakt, verteld in je eigen woorden). De hele app staat in één bestand: `index.html`. Er is geen server en er zijn geen libraries.
+Twee onderdelen in één app: **Contacten** (wie heb je ontmoet, waar, wat moet je onthouden) en **Verhalen** (wat je zelf hebt meegemaakt, verteld in je eigen woorden). De hele app staat in één bestand: `index.html`, plus een klein hulpbestand `sw.js` dat de app ook zonder internet laat openen. Er is geen server en er zijn geen libraries.
 
-- **Inspreken**: één tik en de app luistert. Bij contacten haalt hij uit "Jan de Vries, ontmoet op de borrel, werkt bij een bank" zelf de naam en de plek. Controleer het even voordat je opslaat.
+- **Inspreken**: één tik en de app luistert. Bij contacten haalt hij uit "Jan de Vries, ontmoet op de borrel, werkt bij een bank" zelf de naam en de plek. Controleer het even voordat je opslaat. In het tekstvak blijft de app luisteren tot je op Stop tikt, ook na een stilte.
+- **Dubbele namen**: bestaat een naam al, dan vraagt de app of het dezelfde persoon is. Zo ja, dan komt je notitie als aanvulling bij de bestaande persoon.
 - **Waar ontmoet**: een eigen veld met suggesties uit eerdere plekken. Tik op 📍 bij een persoon om iedereen van die plek te zien.
 - **Verhalen**: met een titel (of automatisch de eerste woorden), de datum waarop het gebeurde, en lang achter elkaar inspreken.
 - **Aanvullen**: extra tekst bij een persoon of verhaal. Die komt met de datum onder de bestaande tekst.
@@ -16,7 +17,7 @@ Twee onderdelen in één app: **Contacten** (wie heb je ontmoet, waar, wat moet 
 ## a. De app hosten via GitHub Pages (aparte PUBLIEKE repo, zonder data)
 
 1. Ga op github.com naar **New repository**, bijvoorbeeld `persoonlijk-logboek`, en kies **Public**.
-2. Kies **Add file → Upload files**, upload alleen `index.html` (en eventueel deze README) en klik **Commit changes**.
+2. Kies **Add file → Upload files**, upload alleen `index.html` en `sw.js` (en eventueel deze README) en klik **Commit changes**.
 3. Ga naar **Settings → Pages**. Kies bij *Source* **Deploy from a branch**, met branch `main` en map `/ (root)`. Klik **Save**.
 4. Na ongeveer een minuut staat de app op `https://<jouw-gebruikersnaam>.github.io/persoonlijk-logboek/`.
 
@@ -56,7 +57,7 @@ Het token staat alleen in de opslag van de app op je telefoon. Het gaat alleen i
 Ook goed om te weten:
 - iOS kan de opslag van een webapp wissen als je die lang niet gebruikt. Zet daarom de GitHub-back-up aan, of maak af en toe een export (**Instellingen → Exporteer JSON**).
 - Werkt de microfoonknop van de app niet (iOS staat spraakherkenning in beginscherm-apps niet altijd toe)? Tik dan in het veld, gebruik de **microfoon op het iOS-toetsenbord** en tik daarna op **✨ Opschonen**. Dicteren moet aanstaan: *Instellingen → Algemeen → Toetsenbord → Dicteren*.
-- Synchroniseren en spraakherkenning hebben internet nodig. Lezen, zoeken, opslaan en opschonen werken ook offline, zolang de app al open is.
+- Synchroniseren en spraakherkenning hebben internet nodig. Lezen, zoeken, typen, opslaan en opschonen werken ook offline. De app opent ook zonder internet, zodra je hem één keer mét internet hebt geopend.
 
 ---
 
