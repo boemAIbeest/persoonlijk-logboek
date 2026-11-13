@@ -276,6 +276,62 @@
     *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
   }
 
+  /* Levende achtergrond: zachte gloed die langzaam beweegt en meepulseert bij inspreken */
+  :root { --glow-a: rgba(110,195,250,.30); --glow-b: rgba(170,180,255,.26); --edge-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(0,0,0,.05); }
+  @media (prefers-color-scheme: dark) {
+    :root { --glow-a: rgba(184,230,254,.38); --glow-b: rgba(140,160,255,.30); --edge-shadow: inset 0 1px 0 rgba(255,255,255,.07); }
+  }
+  .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; --boost: 0; }
+  .aurora i { position: absolute; width: 90vmax; height: 90vmax; border-radius: 50%; opacity: calc(.55 + var(--boost) * .45); will-change: transform; }
+  .aurora i:nth-child(1) { left: -35vmax; top: -42vmax; background: radial-gradient(circle, var(--glow-a) 0%, transparent 62%); animation: drift1 38s ease-in-out infinite alternate; }
+  .aurora i:nth-child(2) { right: -48vmax; top: 18vh; background: radial-gradient(circle, var(--glow-b) 0%, transparent 62%); animation: drift2 46s ease-in-out infinite alternate; }
+  .aurora i:nth-child(3) { left: -25vmax; bottom: -55vmax; background: radial-gradient(circle, var(--glow-a) 0%, transparent 62%); animation: drift3 54s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate(18vmax, 12vmax) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-16vmax, -14vmax) scale(.9); } }
+  @keyframes drift3 { to { transform: translate(14vmax, -10vmax) scale(1.1); } }
+  .view { position: relative; z-index: 1; }
+
+  /* Glas en diepte */
+  .topbar {
+    background: color-mix(in srgb, var(--bg) 62%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+    border-bottom-color: color-mix(in srgb, var(--line) 60%, transparent);
+  }
+  .card, .group, .existing { background: color-mix(in srgb, var(--card) 74%, transparent); box-shadow: var(--edge-shadow); }
+  .tabs, .search, .sort select { background: color-mix(in srgb, var(--field) 68%, transparent); }
+  .fab { box-shadow: 0 8px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.4); }
+  .fab.fab-mic {
+    background: color-mix(in srgb, var(--card) 55%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 8px 30px rgba(0,0,0,.22), var(--edge-shadow);
+  }
+  .dialog {
+    background: color-mix(in srgb, var(--card) 84%, transparent); border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4);
+  }
+
+  /* Grote opnameknop met ringen */
+  .rec-dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; height: calc(310px + var(--sab)); padding-bottom: var(--sab); overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; pointer-events: none;
+    background: linear-gradient(to top, var(--bg) 0%, var(--bg) 50%, transparent 100%);
+    animation: fadeUp .3s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .rec-dock .wave { position: relative; z-index: 1; width: min(320px, 82vw); height: 48px; margin: 0; }
+  .rec-ring { position: relative; width: 84px; height: 84px; }
+  .rec-ring canvas { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; transform: translate(-50%, -50%); color: var(--link); }
+  .rec-stop {
+    pointer-events: auto; position: relative; width: 84px; height: 84px; border-radius: 50%; border: 0;
+    background: var(--rec); color: #fff; display: grid; place-items: center;
+    box-shadow: 0 10px 34px rgba(239,68,68,.45), inset 0 1px 0 rgba(255,255,255,.35);
+    transition: transform .1s ease;
+  }
+  .rec-stop:active { transform: scale(.94); }
+  .rec-stop svg { width: 30px; height: 30px; }
+  .rec-label { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .view.docked main { padding-bottom: calc(var(--sab) + 330px); }
+  @media (prefers-reduced-motion: reduce) { .aurora i { animation: none !important; } }
+
   /* Dialog + toast */
   .backdrop {
     position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45);
@@ -303,6 +359,7 @@
 </style>
 </head>
 <body>
+<div id="aurora" class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <script>try { if (localStorage.getItem('wiewasdat.pin.v1')) document.body.classList.add('locked'); } catch (e) {}</script>
 <div id="splash" class="splash" aria-hidden="true">
@@ -399,7 +456,6 @@
     <div class="tool-row">
       <button id="btn-summarize" class="chip" type="button">✨ Opschonen</button>
     </div>
-    <canvas id="wave" class="wave" aria-hidden="true" hidden></canvas>
     <p id="listening" class="listening" aria-live="polite" hidden></p>
     <p id="speech-hint" class="hint" hidden></p>
     <p id="edit-error" class="error" role="alert" hidden></p>
@@ -466,6 +522,18 @@
     </div>
   </main>
 </section>
+
+<!-- ===== Opnameknop met ringen (zichtbaar tijdens inspreken) ===== -->
+<div id="rec-dock" class="rec-dock" hidden>
+  <canvas id="wave" class="wave" aria-hidden="true" hidden></canvas>
+  <div class="rec-ring">
+    <canvas id="rings" aria-hidden="true"></canvas>
+    <button id="rec-stop" class="rec-stop" type="button" aria-label="Stop met inspreken">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+    </button>
+  </div>
+  <span class="rec-label">Tik om te stoppen</span>
+</div>
 
 <!-- ===== Pincodescherm ===== -->
 <div id="lock" class="lock" hidden>
@@ -1534,6 +1602,8 @@
 
   function startWave() {
     wave.canvas.hidden = false;
+    $('rec-dock').hidden = false;
+    views.edit.classList.add('docked');
     wave.color = getComputedStyle(wave.canvas).color;
     wave.energy = 0;
     wave.target = 0.2;
@@ -1555,6 +1625,9 @@
     cancelAnimationFrame(wave.raf);
     wave.raf = 0;
     wave.canvas.hidden = true;
+    $('rec-dock').hidden = true;
+    views.edit.classList.remove('docked');
+    $('aurora').style.setProperty('--boost', '0');
     if (wave.stream) { wave.stream.getTracks().forEach(t => t.stop()); wave.stream = null; }
     if (wave.audio) { wave.audio.close().catch(() => {}); wave.audio = null; wave.analyser = null; }
   }
@@ -1582,6 +1655,8 @@
       wave.target = Math.max(0.1, wave.target * 0.955); // langzaam terug naar rust
     }
     wave.energy += (wave.target - wave.energy) * 0.2;
+    drawRings(ts);
+    $('aurora').style.setProperty('--boost', wave.energy.toFixed(3));
 
     const step = 7, barW = 4;
     const bars = Math.max(8, Math.floor(w / step));
@@ -1600,6 +1675,32 @@
     }
     g.globalAlpha = 1;
   }
+
+  /** Ringen rond de grote opnameknop: lopen naar buiten en worden feller als je praat. */
+  function drawRings(ts) {
+    const c = $('rings');
+    const size = c.clientWidth;
+    if (!size) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (c.width !== Math.round(size * dpr)) { c.width = c.height = Math.round(size * dpr); }
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, size, size);
+    const cx = size / 2, r0 = 46, span = size / 2 - r0 - 4;
+    const e = wave.energy, t = ts / 1000;
+    g.fillStyle = g.strokeStyle = wave.color;
+    g.globalAlpha = 0.10 + e * 0.2; // zachte gloed direct om de knop
+    g.beginPath(); g.arc(cx, cx, r0 + 6 + e * 16, 0, Math.PI * 2); g.fill();
+    g.lineWidth = 2;
+    const n = 4;
+    for (let k = 0; k < n; k++) {
+      const p = reduceMotion ? (k + 1) / (n + 1) : (t * 0.35 + k / n) % 1;
+      g.globalAlpha = (1 - p) * (0.12 + e * 0.6);
+      g.beginPath(); g.arc(cx, cx, r0 + p * span * (0.55 + e * 0.45), 0, Math.PI * 2); g.stroke();
+    }
+    g.globalAlpha = 1;
+  }
+  $('rec-stop').addEventListener('click', () => stopDictation(false));
 
   /** Na het inspreken: naam/plek herkennen (snel inspreken) en de tekst opschonen. Met ongedaan maken. */
   function afterDictation(rec, field, base, sep, spoken) {
