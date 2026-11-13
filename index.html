@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Persoonlijk logboek">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#faf9f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)">
+<title>Persoonlijk logboek</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    /* Slate Haze – lichte variant */
+    --bg: #faf9f5;
+    --card: #ffffff;
+    --text: #1a1915;
+    --muted: #6b6960;
+    --line: #e3e1d8;
+    --field: #ffffff;
+    --accent: #b8e6fe;      /* primary: knoppen */
+    --accent-ink: #1a1915;  /* tekst op primary */
+    --link: #0b6593;        /* tekstknoppen */
+    --accent-soft: #e6f4fc;
+    --danger: #dc2626;
+    --rec: #ef4444;
+    --mark: #b8e6fe;
+    --shadow: 0 1px 2px rgba(0,0,0,.05);
+    --radius: 8px;
+    --r: 8px;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Slate Haze – donker (hoofdthema) */
+      --bg: #262624;
+      --card: #262624;
+      --text: #faf9f5;
+      --muted: #b7b5a9;
+      --line: #3e3e38;
+      --field: #1b1b19;
+      --accent: #b8e6fe;
+      --accent-ink: #1a1915;
+      --link: #b8e6fe;
+      --accent-soft: #1f2d34;
+      --danger: #ef4444;
+      --rec: #ef4444;
+      --mark: #b8e6fe;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [hidden] { display: none !important; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .view { min-height: 100vh; min-height: 100dvh; padding-left: var(--sal); padding-right: var(--sar); }
+  .topbar {
+    position: sticky; top: 0; z-index: 5;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    padding: calc(var(--sat) + 10px) 16px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .bar { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+  .bar h1 { flex: 1; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  .bar h1.center { text-align: center; font-size: 17px; font-weight: 600; }
+  main { padding: 12px 16px calc(var(--sab) + 110px); max-width: 680px; margin: 0 auto; }
+
+  .icon-btn, .text-btn {
+    min-width: 44px; min-height: 44px; border: 0; background: none;
+    display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r);
+  }
+  .text-btn { color: var(--link); font-weight: 600; padding: 0 6px; }
+  .icon-btn svg { width: 26px; height: 26px; }
+
+  .search {
+    display: flex; align-items: center; gap: 8px; margin-top: 8px;
+    background: var(--field); border: 1px solid var(--line); border-radius: var(--r); padding: 0 6px 0 12px;
+  }
+  .search svg { width: 20px; height: 20px; color: var(--muted); flex: none; }
+  .search input { flex: 1; min-width: 0; border: 0; background: none; height: 46px; outline: none; font-size: 17px; }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .search .icon-btn { color: var(--muted); font-size: 22px; }
+
+  .meta-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 2px 2px 10px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  .banner {
+    display: block; width: 100%; text-align: left; margin: 0 0 12px; padding: 12px 14px;
+    border: 1px solid var(--danger); color: var(--danger); background: none; border-radius: var(--r); font-size: 15px;
+  }
+
+  .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 8px; box-shadow: var(--shadow); }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .card h2 { margin: 0; font-size: 19px; line-height: 1.3; overflow-wrap: anywhere; }
+  .card time { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .card .note { margin: 6px 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .card .edited { color: var(--muted); font-size: 13px; margin: 0; }
+  .card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+  .card-actions button { min-height: 44px; padding: 0 12px; border: 0; background: none; border-radius: var(--r); color: var(--link); font-weight: 600; font-size: 15px; }
+  .card-actions .del { color: var(--danger); }
+  mark { background: var(--mark); color: var(--accent-ink); border-radius: 3px; padding: 0 1px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
+  .empty strong { display: block; color: var(--text); font-size: 19px; margin-bottom: 6px; }
+
+  .fab {
+    position: fixed; z-index: 6; right: calc(var(--sar) + 18px); bottom: calc(var(--sab) + 18px);
+    height: 56px; padding: 0 22px 0 18px; border-radius: var(--r); border: 0;
+    background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 17px;
+    display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  }
+  .fab svg { width: 24px; height: 24px; }
+
+  /* Form */
+  .form label, .group-title { display: block; font-weight: 600; margin: 14px 2px 6px; }
+  .field-row { display: flex; gap: 8px; align-items: stretch; }
+  .field-row.top { align-items: flex-start; }
+  .field-row input, .field-row textarea, .settings input[type=text], .settings input[type=password] {
+    flex: 1; min-width: 0; width: 100%; border: 1px solid var(--line); background: var(--field);
+    border-radius: var(--r); padding: 12px 14px; font-size: 17px; outline: none;
+  }
+  .field-row input { height: 54px; }
+  .field-row textarea { min-height: 180px; resize: vertical; }
+  .field-row input:focus, .field-row textarea:focus, .settings input:focus { border-color: var(--accent); }
+  .mic {
+    flex: none; width: 64px; height: 54px; border-radius: var(--r); border: 1px solid var(--line);
+    background: var(--card); color: var(--link);
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  }
+  .mic svg { width: 24px; height: 24px; }
+  .mic.is-recording { background: var(--rec); border-color: var(--rec); color: #fff; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.55); } 50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); } }
+  @media (prefers-reduced-motion: reduce) { .mic.is-recording { animation: none; } }
+  .existing { background: var(--card); border: 1px dashed var(--line); border-radius: var(--r); padding: 10px 14px; margin-top: 14px; }
+  .existing p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; }
+  .tool-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .chip { min-height: 44px; padding: 0 16px; border-radius: var(--r); border: 1px solid var(--line); background: var(--accent-soft); color: var(--link); font-weight: 700; font-size: 15px; }
+  .chip:disabled { opacity: .55; }
+  .hint { background: var(--accent-soft); border-radius: var(--r); padding: 12px 14px; margin: 14px 0 0; font-size: 15px; }
+  .listening { color: var(--rec); font-weight: 600; margin: 10px 2px 0; font-size: 15px; }
+  .error { color: var(--danger); font-weight: 600; margin: 12px 2px 0; }
+  .primary, .secondary, .danger-btn {
+    display: block; width: 100%; min-height: 52px; border-radius: var(--r); font-weight: 700; font-size: 17px; margin-top: 18px;
+  }
+  .primary { border: 0; background: var(--accent); color: var(--accent-ink); }
+  .secondary { border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  .primary:disabled, .secondary:disabled { opacity: .55; }
+
+  /* Settings */
+  .group { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 16px 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .group h2 { font-size: 17px; margin: 12px 0 2px; }
+  .group p { margin: 6px 0; }
+  .settings label { display: block; font-weight: 600; margin: 14px 2px 6px; font-size: 15px; }
+  .settings input[type=text], .settings input[type=password] { height: 50px; }
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; min-height: 44px; }
+  .switch-row span { font-weight: 600; font-size: 15px; }
+  .switch { position: relative; width: 52px; height: 32px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; z-index: 1; }
+  .switch i { position: absolute; inset: 0; border-radius: var(--r); background: var(--line); transition: background .2s; }
+  .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(20px); }
+  .switch input:focus-visible + i { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .status { margin-top: 14px; font-size: 15px; padding: 10px 12px; border-radius: 10px; background: var(--bg); }
+  .status.is-error { color: var(--danger); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two .secondary { margin-top: 12px; }
+
+  /* Dialog + toast */
+  .backdrop {
+    position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.45);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 16px calc(var(--sar) + 12px) calc(var(--sab) + 12px) calc(var(--sal) + 12px);
+  }
+  .dialog { width: 100%; max-width: 440px; background: var(--card); border-radius: var(--r); padding: 20px 18px 14px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .dialog h2 { margin: 0 0 6px; font-size: 19px; }
+  .dialog p { margin: 0 0 8px; color: var(--muted); white-space: pre-wrap; }
+  .dialog-actions { display: grid; gap: 8px; margin-top: 14px; }
+  .dialog-actions button { min-height: 50px; border-radius: var(--r); border: 1px solid var(--line); background: var(--bg); font-weight: 600; font-size: 17px; }
+  .dialog-actions .is-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .dialog-actions .is-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+  @media (min-width: 600px) { .backdrop { align-items: center; } }
+
+  .toast {
+    position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--sab) + 92px); width: max-content; max-width: calc(100vw - 32px);
+    background: #1a1915; color: #faf9f5; border-radius: var(--r); padding: 6px 6px 6px 16px;
+    display: flex; align-items: center; gap: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.3); font-size: 15px;
+  }
+  .toast span { padding: 8px 0; }
+  .toast button { min-height: 40px; border: 0; background: none; color: #b8e6fe; font-weight: 700; padding: 0 12px; }
+  @media (prefers-color-scheme: dark) { .toast { background: #faf9f5; color: #1a1915; } .toast button { color: #0b6593; } }
+</style>
+</head>
+<body>
+
+<!-- ===== Lijst ===== -->
+<section id="view-list" class="view">
+  <header class="topbar">
+    <div class="bar">
+      <h1>Persoonlijk logboek</h1>
+      <button id="btn-settings" class="icon-btn" type="button" aria-label="Instellingen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Zoek op naam of notitie" aria-label="Zoeken" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <button id="search-clear" class="icon-btn" type="button" aria-label="Zoekopdracht wissen" hidden>×</button>
+    </div>
+  </header>
+  <main>
+    <button id="sync-banner" class="banner" type="button" hidden></button>
+    <div class="meta-row"><span id="count" class="muted small"></span></div>
+    <ul id="list" class="list"></ul>
+    <div id="empty" class="empty" hidden><strong id="empty-title"></strong><span id="empty-text"></span></div>
+  </main>
+  <button id="btn-new" class="fab" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Nieuw
+  </button>
+</section>
+
+<!-- ===== Nieuwe / bewerk notitie ===== -->
+<section id="view-edit" class="view" hidden>
+  <header class="topbar">
+    <div class="bar">
+      <button id="edit-cancel" class="text-btn" type="button">Annuleer</button>
+      <h1 id="edit-title" class="center">Nieuwe notitie</h1>
+      <button id="edit-save-top" class="text-btn" type="button">Bewaar</button>
+    </div>
+  </header>
+  <main class="form">
+    <label for="f-naam">Naam</label>
+    <div class="field-row">
+      <input id="f-naam" type="text" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="Bijv. Jan de Vries">
+      <button class="mic" type="button" data-target="f-naam" aria-pressed="false" aria-label="Naam inspreken"></button>
+    </div>
+    <div id="existing" class="existing" hidden>
+      <span class="muted small">Wat er al staat</span>
+      <p id="existing-text"></p>
+    </div>
+    <label id="label-notitie" for="f-notitie">Notitie</label>
+    <div class="field-row top">
+      <textarea id="f-notitie" rows="7" autocapitalize="sentences" placeholder="Waar ontmoet, wat doet diegene, iets om te onthouden…"></textarea>
+      <button class="mic" type="button" data-target="f-notitie" aria-pressed="false" aria-label="Notitie inspreken"></button>
+    </div>
+    <div class="tool-row">
+      <button id="btn-summarize" class="chip" type="button">✨ Opschonen</button>
+      <span id="summarize-status" class="muted small" aria-live="polite"></span>
+    </div>
+    <p id="listening" class="listening" aria-live="polite" hidden></p>
+    <p id="speech-hint" class="hint" hidden></p>
+    <p id="edit-error" class="error" role="alert" hidden></p>
+    <p id="edit-meta" class="muted small"></p>
+    <button id="edit-save" class="primary" type="button">Opslaan</button>
+  </main>
+</section>
+
+<!-- ===== Instellingen ===== -->
+<section id="view-settings" class="view" hidden>
+  <header class="topbar">
+    <div class="bar">
+      <button id="settings-back" class="text-btn" type="button">‹ Terug</button>
+      <h1 class="center">Instellingen</h1>
+      <span style="width:64px"></span>
+    </div>
+  </header>
+  <main class="settings">
+    <div class="group">
+      <h2>Back-up via GitHub</h2>
+      <p class="muted small">Gebruik een private repo en een fine-grained token met alleen “Contents: Read and write” op die repo.</p>
+      <label for="s-repo">Repo (owner/repo)</label>
+      <input id="s-repo" type="text" placeholder="jouwnaam/contacten-backup" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <label for="s-token">Token</label>
+      <input id="s-token" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <label for="s-path">Bestandspad</label>
+      <input id="s-path" type="text" placeholder="contacten.json" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="switch-row">
+        <span id="auto-label">Automatisch synchroniseren na opslaan</span>
+        <label class="switch"><input id="s-auto" type="checkbox" aria-labelledby="auto-label"><i></i></label>
+      </div>
+      <button id="s-save" class="secondary" type="button">Instellingen opslaan</button>
+      <button id="s-sync" class="primary" type="button">Synchroniseer</button>
+      <p id="sync-status" class="status" aria-live="polite"></p>
+    </div>
+    <div class="group">
+      <h2>Opschonen van ingesproken tekst</h2>
+      <p class="muted small">Haalt stopwoordjes (“eh”, “zeg maar”), herhalingen en losse brokjes weg en maakt er korte, nette zinnen van. Werkt volledig op dit apparaat, zonder internet.</p>
+      <div class="switch-row">
+        <span id="summ-label">Automatisch opschonen na inspreken</span>
+        <label class="switch"><input id="s-summ" type="checkbox" aria-labelledby="summ-label"><i></i></label>
+      </div>
+    </div>
+    <div class="group">
+      <h2>Noodoplossing</h2>
+      <p class="muted small">Bewaar of herstel alle notities als JSON-bestand. Importeren voegt samen; er gaat niets verloren.</p>
+      <div class="two">
+        <button id="btn-export" class="secondary" type="button">Exporteer JSON</button>
+        <button id="btn-import" class="secondary" type="button">Importeer JSON</button>
+      </div>
+      <input id="import-file" type="file" accept="application/json,.json,text/plain" hidden>
+    </div>
+    <div class="group">
+      <h2>Over</h2>
+      <p id="about" class="muted small"></p>
+      <p class="muted small">Gegevens staan alleen op dit apparaat (en in je eigen GitHub-repo als je synchroniseert). Safari en het beginscherm-icoon hebben elk hun eigen opslag: gebruik de app alleen via het icoon.</p>
+    </div>
+  </main>
+</section>
+
+<!-- Dialoog en melding -->
+<div id="dialog" class="backdrop" hidden>
+  <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlg-title" aria-describedby="dlg-msg">
+    <h2 id="dlg-title"></h2>
+    <p id="dlg-msg"></p>
+    <div id="dlg-actions" class="dialog-actions"></div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden><span id="toast-msg"></span><button id="toast-action" type="button" hidden></button></div>
+
+<!-- ===== Kernlogica (geen DOM; los te testen) ===== -->
+<script id="core">
+(function (global) {
+  'use strict';
+
+  const API = 'https://api.github.com';
+  const APP_ID = 'wie-was-dat';
+
+  /** Fout met een Nederlandse, toonbare melding. */
+  class AppError extends Error {
+    constructor(message, code) { super(message); this.name = 'AppError'; this.code = code || 'error'; }
+  }
+
+  // ---------- Tekst en zoeken ----------
+
+  /** Kleine letters en zonder accenten: "Zoë" -> "zoe". */
+  function fold(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+
+  /** Zoekopdracht in losse woorden; elk woord moet ergens voorkomen. */
+  function tokens(query) {
+    return fold(query).split(/\s+/).filter(Boolean);
+  }
+
+  function matches(rec, toks) {
+    if (!toks.length) return true;
+    const hay = fold(rec.naam + '\n' + rec.notitie);
+    return toks.every(t => hay.includes(t));
+  }
+
+  /** Posities [start, eind) in de originele tekst waar een zoekwoord staat, voor markering. */
+  function highlightRanges(text, toks) {
+    if (!text || !toks.length) return [];
+    let folded = '';
+    const map = []; // index in folded -> index in text
+    let i = 0;
+    for (const ch of text) {
+      const f = fold(ch);
+      for (let k = 0; k < f.length; k++) { folded += f[k]; map.push(i); }
+      i += ch.length;
+    }
+    const ranges = [];
+    for (const t of toks) {
+      let from = 0, idx;
+      while ((idx = folded.indexOf(t, from)) !== -1) {
+        const start = map[idx];
+        const last = map[idx + t.length - 1];
+        const end = last + (text.codePointAt(last) > 0xffff ? 2 : 1);
+        ranges.push([start, end]);
+        from = idx + t.length;
+      }
+    }
+    ranges.sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const r of ranges) {
+      const prev = merged[merged.length - 1];
+      if (prev && r[0] <= prev[1]) prev[1] = Math.max(prev[1], r[1]);
+      else merged.push([r[0], r[1]]);
+    }
+    return merged;
+  }
+
+  // ---------- Opschonen van ingesproken tekst (volledig lokaal) ----------
+
+  const NB = '(?<![\\p{L}\\p{N}])';   // geen letter/cijfer ervoor
+  const NA = '(?![\\p{L}\\p{N}])';    // geen letter/cijfer erna
+  const FILLERS = [
+    'e+h+m*', 'u+h+m*', 'e+u+h+', 'h+m+', 'm{2,}', 'zeg maar', 'weet je wel', 'weet je', 'nou ja', 'dus ja',
+    'ik bedoel', 'hoe heet het', 'hoe zeg je dat', 'of zo', 'ofzo', 'en zo', 'enzovoorts?', 'echt wel',
+    'eigenlijk', 'gewoon', 'enfin', 'zeg ik', 'als het ware'
+  ];
+  const FILLER_RE = new RegExp(NB + '(?:' + FILLERS.join('|') + ')' + NA + ',?', 'giu');
+  const TOPIC_SWITCH_RE = new RegExp(NB + '(?:o+h?\\s+ja|verder|en\\s+nog\\s+iets)' + NA + '[,:]?\\s+', 'giu');
+  const LEADING_RE = /^(?:en|dus|maar|ja|nee|oké|oke|ok|nou|verder|oh|o)(?:\s*,\s*|\s+)/i;
+  const REPEAT_WORD_RE = new RegExp(NB + '([\\p{L}\\p{N}]+)(?:[\\s,]+\\1)+' + NA, 'giu');
+  const REPEAT_PAIR_RE = new RegExp(NB + '([\\p{L}\\p{N}]+\\s+[\\p{L}\\p{N}]+)(?:[\\s,]+\\1)+' + NA, 'giu');
+  const THROWAWAY = new Set(['ja', 'nee', 'oke', 'ok', 'nou', 'dus', 'klaar', 'dat was het', 'dat is het', 'verder niks', 'verder niets', 'dat was het wel', 'stop']);
+
+  const sentenceKey = s => fold(s).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+  function cleanSentence(s) {
+    let t = s.replace(/^\s*[-•*]\s*/, '');
+    t = t.replace(FILLER_RE, ' ');
+    t = t.replace(REPEAT_PAIR_RE, '$1').replace(REPEAT_WORD_RE, '$1');
+    t = t.replace(/\s+/g, ' ').replace(/\s+([,.!?;:])/g, '$1').replace(/([,;:])(?:\s*[,;:])+/g, '$1');
+    let prev;
+    do { prev = t; t = t.trim().replace(LEADING_RE, ''); } while (t !== prev);
+    t = t.replace(/^[,.;:\s]+|[,;:\s]+$/g, '');
+    const end = /[!?]$/.test(t) ? '' : '.';
+    t = t.replace(/\.+$/, '');
+    if (!t) return '';
+    return t.charAt(0).toUpperCase() + t.slice(1) + end;
+  }
+
+  /**
+   * Maakt ingesproken tekst kort en netjes: stopwoorden, herhalingen, losse brokjes
+   * en dubbele zinnen eruit. Meerdere zinnen worden een lijstje met streepjes.
+   */
+  function cleanupText(text) {
+    const src = String(text || '').replace(/\r/g, '').replace(TOPIC_SWITCH_RE, '.\n');
+    const parts = src.split(/(?<=[.!?])\s+|\n+/);
+    const kept = [];
+    for (const p of parts) {
+      const s = cleanSentence(p);
+      const key = sentenceKey(s);
+      if (!key || THROWAWAY.has(key)) continue;
+      if (kept.some(k => k.key.includes(key))) continue;            // al gezegd
+      for (let i = kept.length - 1; i >= 0; i--) if (key.includes(kept[i].key)) kept.splice(i, 1); // uitgebreidere versie wint
+      kept.push({ s, key });
+    }
+    if (!kept.length) return '';
+    if (kept.length === 1) return kept[0].s;
+    return kept.map(k => '- ' + k.s).join('\n');
+  }
+
+  // ---------- Records ----------
+
+  function isoOrNull(v) {
+    if (typeof v !== 'string' && typeof v !== 'number') return null;
+    const t = new Date(v).getTime();
+    return Number.isFinite(t) ? new Date(t).toISOString() : null;
+  }
+
+  /** Maakt een record netjes (of null als het onbruikbaar is). */
+  function normalizeRecord(r) {
+    if (!r || typeof r !== 'object' || typeof r.id !== 'string' || !r.id.trim()) return null;
+    const createdAt = isoOrNull(r.createdAt) || isoOrNull(r.updatedAt) || new Date(0).toISOString();
+    return {
+      id: r.id.trim(),
+      naam: typeof r.naam === 'string' ? r.naam : '',
+      notitie: typeof r.notitie === 'string' ? r.notitie : '',
+      createdAt,
+      updatedAt: isoOrNull(r.updatedAt) || createdAt,
+      deleted: r.deleted === true
+    };
+  }
+
+  function normalizeList(list) {
+    const out = [];
+    for (const r of Array.isArray(list) ? list : []) {
+      const n = normalizeRecord(r);
+      if (n) out.push(n);
+    }
+    return out;
+  }
+
+  /** Leest JSON uit back-up, export of localStorage (array of {records: [...]}). */
+  function parseData(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { throw new AppError('Het bestand is geen geldige JSON.', 'parse'); }
+    if (Array.isArray(data)) return normalizeList(data);
+    if (data && Array.isArray(data.records)) return normalizeList(data.records);
+    throw new AppError('Het bestand bevat geen notities in het verwachte formaat.', 'parse');
+  }
+
+  /** Vaste volgorde, zodat gelijke inhoud ook gelijke tekst geeft. */
+  function sortStable(list) {
+    return list.slice().sort((a, b) =>
+      a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  }
+
+  function serialize(records) {
+    const clean = sortStable(normalizeList(records));
+    return JSON.stringify({ app: APP_ID, version: 1, records: clean }, null, 2) + '\n';
+  }
+
+  /** Is versie a nieuwer dan b? Bij gelijke tijd wint een verwijdering (tombstone). */
+  function isNewer(a, b) {
+    const ta = Date.parse(a.updatedAt), tb = Date.parse(b.updatedAt);
+    if (ta !== tb) return ta > tb;
+    if (a.deleted !== b.deleted) return a.deleted;
+    return true; // gelijk: lokale versie houden
+  }
+
+  /** Samenvoegen per id; nieuwste updatedAt wint. Tombstones blijven bewaard. */
+  function mergeRecords(local, remote) {
+    const map = new Map();
+    for (const r of normalizeList(remote)) {
+      const cur = map.get(r.id);
+      if (!cur || isNewer(r, cur)) map.set(r.id, r);
+    }
+    for (const l of normalizeList(local)) {
+      const r = map.get(l.id);
+      if (!r || isNewer(l, r)) map.set(l.id, l);
+    }
+    return sortStable([...map.values()]);
+  }
+
+  /** Aantal records in `after` dat nieuw of anders is t.o.v. `before`. */
+  function countChanges(before, after) {
+    const m = new Map(normalizeList(before).map(r => [r.id, r]));
+    let n = 0;
+    for (const r of normalizeList(after)) {
+      const b = m.get(r.id);
+      if (!b || b.updatedAt !== r.updatedAt || b.deleted !== r.deleted || b.naam !== r.naam || b.notitie !== r.notitie) n++;
+    }
+    return n;
+  }
+
+  // ---------- UTF-8-veilige base64 ----------
+
+  function utf8ToB64(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+
+  function b64ToUtf8(b64) {
+    const bin = atob(String(b64 || '').replace(/\s+/g, ''));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  // ---------- GitHub (Contents API) ----------
+
+  const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+
+  function cleanPath(p) {
+    return String(p || '').trim().replace(/^\/+|\/+$/g, '') || 'contacten.json';
+  }
+
+  function encodePath(p) {
+    return cleanPath(p).split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  }
+
+  /** Controleert instellingen; geeft {repo, token, path} terug of gooit een AppError. */
+  function checkSettings(s) {
+    const repo = String(s.repo || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$/i, '').replace(/\/+$/, '');
+    const token = String(s.token || '').trim();
+    if (!repo || !token) throw new AppError('Vul eerst repo en token in bij Instellingen.', 'config');
+    if (!REPO_RE.test(repo)) throw new AppError('Repo moet de vorm "owner/repo" hebben.', 'config');
+    if (/\s/.test(token)) throw new AppError('Het token bevat spaties. Plak het opnieuw.', 'config');
+    const path = cleanPath(s.path);
+    if (path.split('/').some(seg => seg === '.' || seg === '..')) throw new AppError('Ongeldig bestandspad.', 'config');
+    return { repo, token, path };
+  }
+
+  /** Eén GitHub-verzoek. Het token gaat alleen in de Authorization-header, nooit in de URL. */
+  async function gh(ctx, url, opts) {
+    const headers = { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + ctx.token };
+    if (opts && opts.body) headers['Content-Type'] = 'application/json';
+    try {
+      return await ctx.fetch(url, Object.assign({ cache: 'no-store' }, opts || {}, { headers }));
+    } catch (e) {
+      throw new AppError('Geen verbinding met GitHub. Controleer je internetverbinding.', 'network');
+    }
+  }
+
+  function errorFor(res) {
+    const s = res.status;
+    if (s === 401) return new AppError('Token ongeldig of verlopen. Maak een nieuw token aan en plak het in Instellingen.', 'auth');
+    if (s === 429 || (s === 403 && res.headers && res.headers.get('x-ratelimit-remaining') === '0')) {
+      return new AppError('GitHub-limiet bereikt. Probeer het over een paar minuten opnieuw.', 'rate');
+    }
+    if (s === 403) return new AppError('Geen toestemming. Geef het token “Contents: Read and write” op deze repo.', 'forbidden');
+    if (s === 404) return new AppError('Repo niet gevonden. Controleer “owner/repo” en of het token toegang heeft tot deze repo.', 'notfound');
+    if (s >= 500) return new AppError('GitHub heeft een storing (' + s + '). Probeer het later opnieuw.', 'server');
+    return new AppError('Onverwachte fout van GitHub (' + s + ').', 'http');
+  }
+
+  /** Haalt het back-upbestand op. 404 = bestand bestaat nog niet (als de repo wel bestaat). */
+  async function fetchRemote(ctx) {
+    const res = await gh(ctx, API + '/repos/' + ctx.repo + '/contents/' + encodePath(ctx.path));
+    if (res.status === 404) {
+      const repoRes = await gh(ctx, API + '/repos/' + ctx.repo);
+      if (repoRes.ok) return { exists: false, sha: null, records: [] };
+      throw errorFor(repoRes);
+    }
+    if (!res.ok) throw errorFor(res);
+    const data = await res.json();
+    if (Array.isArray(data) || !data || data.type !== 'file') {
+      throw new AppError('Het bestandspad wijst naar een map, niet naar een bestand.', 'path');
+    }
+    let b64 = data.content || '';
+    // Bestanden > 1 MB: inhoud via de blob-API ophalen.
+    if (data.encoding === 'none' || (!b64 && data.size > 0)) {
+      const br = await gh(ctx, API + '/repos/' + ctx.repo + '/git/blobs/' + data.sha);
+      if (!br.ok) throw errorFor(br);
+      b64 = (await br.json()).content || '';
+    }
+    const text = b64ToUtf8(b64);
+    let records = [];
+    if (text.trim()) {
+      try { records = parseData(text); }
+      catch (e) { throw new AppError('Het back-upbestand op GitHub is beschadigd of geen geldige JSON. Er is niets overschreven.', 'remote-parse'); }
+    }
+    return { exists: true, sha: data.sha, records };
+  }
+
+  /** Schrijft het bestand (aanmaken zonder sha, bijwerken met sha). */
+  async function putRemote(ctx, content, sha) {
+    const body = { message: 'Back-up contacten ' + new Date().toISOString(), content: utf8ToB64(content) };
+    if (sha) body.sha = sha;
+    const res = await gh(ctx, API + '/repos/' + ctx.repo + '/contents/' + encodePath(ctx.path), {
+      method: 'PUT', body: JSON.stringify(body)
+    });
+    if (res.status === 409 || (res.status === 422 && sha)) throw new AppError('Conflict', 'conflict');
+    if (res.status === 422) return Promise.reject(new AppError('GitHub weigerde het bestand (422). Controleer het bestandspad.', 'http'));
+    if (!res.ok) throw errorFor(res);
+    const data = await res.json();
+    return data && data.content ? data.content.sha : null;
+  }
+
+  /**
+   * Volledige synchronisatie: ophalen, samenvoegen, terugschrijven (alleen als er iets veranderd is).
+   * Bij een sha-conflict (iemand schreef ertussen) wordt het tot 3 keer opnieuw geprobeerd.
+   */
+  async function sync(settings, localRecords, fetchFn) {
+    const ctx = Object.assign(checkSettings(settings), { fetch: fetchFn });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const remote = await fetchRemote(ctx);
+      const merged = mergeRecords(localRecords, remote.records);
+      const content = serialize(merged);
+      const stats = { pulled: countChanges(localRecords, merged), pushed: countChanges(remote.records, merged) };
+      if (remote.exists && content === serialize(remote.records)) {
+        return Object.assign({ records: merged, wrote: false, created: false }, stats);
+      }
+      try {
+        await putRemote(ctx, content, remote.sha);
+        return Object.assign({ records: merged, wrote: true, created: !remote.exists }, stats);
+      } catch (e) {
+        if (e.code === 'conflict' && attempt < 3) continue;
+        if (e.code === 'conflict') throw new AppError('Het bestand werd tegelijk ergens anders gewijzigd. Probeer opnieuw.', 'conflict');
+        throw e;
+      }
+    }
+  }
+
+  global.Core = {
+    AppError, fold, tokens, matches, highlightRanges, cleanupText,
+    normalizeRecord, normalizeList, parseData, serialize, mergeRecords, countChanges,
+    utf8ToB64, b64ToUtf8, checkSettings, encodePath, sync
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<!-- ===== Interface ===== -->
+<script>
+(function () {
+  'use strict';
+  const C = window.Core;
+  const KEY_DATA = 'wiewasdat.records.v1';
+  const KEY_SETTINGS = 'wiewasdat.settings.v1';
+  const KEY_LASTSYNC = 'wiewasdat.lastsync.v1';
+
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  // ---------- Opslag (altijd met try/catch) ----------
+
+  function storeGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function storeSet(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+  }
+
+  function loadRecords() {
+    const raw = storeGet(KEY_DATA);
+    if (!raw) return [];
+    try { return C.parseData(raw); } catch (e) { return []; }
+  }
+
+  function loadSettings() {
+    const def = { repo: '', token: '', path: 'contacten.json', autoSync: false, autoClean: true };
+    try { return Object.assign(def, JSON.parse(storeGet(KEY_SETTINGS) || '{}')); } catch (e) { return def; }
+  }
+
+  let records = loadRecords();
+  let settings = loadSettings();
+  let storageOk = storeSet('wiewasdat.test', '1');
+
+  /** Schrijft alle records weg; false als het niet lukt (opslag vol/geblokkeerd). */
+  function persist() {
+    return storeSet(KEY_DATA, JSON.stringify(records));
+  }
+
+  function newId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    const b = new Uint8Array(16);
+    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => { b[i] = Math.random() * 256; });
+    return Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  // ---------- Opmaak van datums ----------
+
+  const fmtDate = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const fmt = iso => fmtDate.format(new Date(iso));
+
+  // ---------- Schermen ----------
+
+  const views = { list: $('view-list'), edit: $('view-edit'), settings: $('view-settings') };
+  function showView(name) {
+    for (const k in views) views[k].hidden = k !== name;
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- Dialoog (vervangt alert/confirm) ----------
+
+  let dialogResolve = null;
+  function dialog(title, message, buttons) {
+    if (dialogResolve) dialogResolve(null);
+    $('dlg-title').textContent = title;
+    $('dlg-msg').textContent = message || '';
+    const box = $('dlg-actions');
+    box.replaceChildren();
+    return new Promise(resolve => {
+      dialogResolve = resolve;
+      let focusBtn = null;
+      for (const b of buttons) {
+        const btn = el('button', b.kind ? 'is-' + b.kind : '', b.label);
+        btn.type = 'button';
+        btn.addEventListener('click', () => closeDialog(b.value));
+        box.append(btn);
+        if (!b.kind && !focusBtn) focusBtn = btn;
+      }
+      $('dialog').hidden = false;
+      (focusBtn || box.firstChild).focus();
+    });
+  }
+  function closeDialog(value) {
+    $('dialog').hidden = true;
+    const r = dialogResolve;
+    dialogResolve = null;
+    if (r) r(value);
+  }
+  $('dialog').addEventListener('click', e => { if (e.target === $('dialog')) closeDialog(null); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dialog').hidden) closeDialog(null); });
+
+  const confirmDialog = (title, msg, okLabel, kind) =>
+    dialog(title, msg, [{ label: okLabel, value: true, kind: kind || 'primary' }, { label: 'Annuleer', value: false }]).then(v => v === true);
+
+  // ---------- Toast ----------
+
+  let toastTimer = 0;
+  function toast(message, action) {
+    clearTimeout(toastTimer);
+    $('toast-msg').textContent = message;
+    const btn = $('toast-action');
+    btn.hidden = !action;
+    btn.onclick = null;
+    if (action) {
+      btn.textContent = action.label;
+      btn.onclick = () => { hideToast(); action.fn(); };
+    }
+    $('toast').hidden = false;
+    toastTimer = setTimeout(hideToast, action ? 6000 : 2800);
+  }
+  function hideToast() { $('toast').hidden = true; }
+
+  // ---------- Lijst en zoeken ----------
+
+  /** Zet tekst in een element met <mark> rond de zoektreffers (zonder innerHTML). */
+  function setHighlighted(node, text, toks) {
+    node.replaceChildren();
+    let pos = 0;
+    for (const [s, e] of C.highlightRanges(text, toks)) {
+      if (s > pos) node.append(document.createTextNode(text.slice(pos, s)));
+      node.append(el('mark', null, text.slice(s, e)));
+      pos = e;
+    }
+    if (pos < text.length) node.append(document.createTextNode(text.slice(pos)));
+  }
+
+  function renderCard(r, toks) {
+    const li = el('li', 'card');
+    const head = el('div', 'card-head');
+    const h = el('h2');
+    setHighlighted(h, r.naam, toks);
+    const t = el('time', null, fmt(r.createdAt));
+    t.dateTime = r.createdAt;
+    head.append(h, t);
+    li.append(head);
+    if (r.notitie) {
+      const p = el('p', 'note');
+      setHighlighted(p, r.notitie, toks);
+      li.append(p);
+    }
+    if (Date.parse(r.updatedAt) - Date.parse(r.createdAt) > 60000) {
+      li.append(el('p', 'edited', 'Bewerkt ' + fmt(r.updatedAt)));
+    }
+    const actions = el('div', 'card-actions');
+    const add = el('button', null, 'Aanvullen');
+    add.type = 'button';
+    add.setAttribute('aria-label', 'Vul aan bij ' + r.naam);
+    add.addEventListener('click', () => openEditor(r.id, 'append'));
+    const edit = el('button', null, 'Bewerken');
+    edit.type = 'button';
+    edit.setAttribute('aria-label', 'Bewerk ' + r.naam);
+    edit.addEventListener('click', () => openEditor(r.id, 'edit'));
+    const del = el('button', 'del', 'Verwijderen');
+    del.type = 'button';
+    del.setAttribute('aria-label', 'Verwijder ' + r.naam);
+    del.addEventListener('click', () => deleteRecord(r.id));
+    actions.append(add, edit, del);
+    li.append(actions);
+    return li;
+  }
+
+  function render() {
+    const q = $('search').value;
+    const toks = C.tokens(q);
+    const alive = records.filter(r => !r.deleted);
+    const visible = alive.filter(r => C.matches(r, toks))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+    $('list').replaceChildren(...visible.map(r => renderCard(r, toks)));
+    $('search-clear').hidden = !q;
+
+    const n = alive.length;
+    $('count').textContent = toks.length
+      ? visible.length + ' van ' + n + (n === 1 ? ' persoon' : ' personen')
+      : n === 0 ? '' : n + (n === 1 ? ' persoon' : ' personen');
+
+    const empty = $('empty');
+    empty.hidden = visible.length > 0;
+    if (!n) {
+      $('empty-title').textContent = 'Nog niemand opgeslagen';
+      $('empty-text').textContent = 'Tik op “Nieuw” en spreek in wie je net hebt ontmoet.';
+    } else if (!visible.length) {
+      $('empty-title').textContent = 'Niets gevonden';
+      $('empty-text').textContent = 'Geen naam of notitie met “' + q.trim() + '”.';
+    }
+    if (!storageOk) {
+      $('sync-banner').hidden = false;
+      $('sync-banner').textContent = 'Let op: opslaan op dit apparaat is geblokkeerd (privémodus?). Notities gaan verloren bij sluiten.';
+    }
+  }
+
+  $('search').addEventListener('input', render);
+  $('search').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+  $('search-clear').addEventListener('click', () => { $('search').value = ''; render(); $('search').focus(); });
+
+  async function deleteRecord(id) {
+    const r = records.find(x => x.id === id);
+    if (!r) return;
+    const ok = await confirmDialog('Verwijderen?', '“' + r.naam + '” en de notitie worden verwijderd.', 'Verwijder', 'danger');
+    if (!ok) return;
+    const backup = Object.assign({}, r);
+    // Soft delete: tombstone blijft bestaan voor synchronisatie, inhoud wordt gewist.
+    Object.assign(r, { deleted: true, naam: '', notitie: '', updatedAt: new Date().toISOString() });
+    persist();
+    render();
+    scheduleAutoSync();
+    toast('Verwijderd', {
+      label: 'Ongedaan maken',
+      fn: () => {
+        Object.assign(r, backup, { deleted: false, updatedAt: new Date().toISOString() });
+        persist();
+        render();
+        scheduleAutoSync();
+      }
+    });
+  }
+
+  // ---------- Editor ----------
+
+  let editingId = null;
+  let editMode = 'new'; // 'new' | 'edit' | 'append'
+  const fNaam = $('f-naam');
+  const fNotitie = $('f-notitie');
+  const nameMic = document.querySelector('.mic[data-target="f-naam"]');
+  const fmtDay = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  function openEditor(id, mode) {
+    stopDictation(true);
+    const r = id ? records.find(x => x.id === id && !x.deleted) : null;
+    editingId = r ? r.id : null;
+    editMode = r ? (mode === 'append' ? 'append' : 'edit') : 'new';
+    const append = editMode === 'append';
+    $('edit-title').textContent = append ? 'Aanvullen' : r ? 'Bewerken' : 'Nieuwe notitie';
+    fNaam.value = r ? r.naam : '';
+    fNaam.readOnly = append;
+    nameMic.hidden = append;
+    fNotitie.value = r && !append ? r.notitie : '';
+    fNotitie.placeholder = append ? 'Wat wil je toevoegen?' : 'Waar ontmoet, wat doet diegene, iets om te onthouden…';
+    $('label-notitie').textContent = append ? 'Aanvulling' : 'Notitie';
+    $('existing').hidden = !(append && r.notitie);
+    $('existing-text').textContent = append ? r.notitie : '';
+    fNaam.dataset.orig = fNaam.value;
+    fNotitie.dataset.orig = fNotitie.value;
+    $('edit-error').hidden = true;
+    $('summarize-status').textContent = '';
+    $('edit-meta').textContent = append
+      ? 'De aanvulling komt met de datum van vandaag onder de bestaande notitie.'
+      : r ? 'Toegevoegd ' + fmt(r.createdAt) : 'Datum en tijd worden automatisch toegevoegd.';
+    $('speech-hint').hidden = !!SR;
+    showView('edit');
+    if (!r) setTimeout(() => fNaam.focus(), 50);
+  }
+
+  const isDirty = () => fNaam.value !== fNaam.dataset.orig || fNotitie.value !== fNotitie.dataset.orig;
+
+  /** Knop "Opschonen": hele notitieveld netjes maken, met ongedaan maken. */
+  function cleanField() {
+    const before = fNotitie.value;
+    if (!before.trim()) { toast('Nog geen tekst om op te schonen'); return; }
+    const after = C.cleanupText(before);
+    if (!after || after === before.trim()) { toast('De tekst was al netjes'); return; }
+    fNotitie.value = after;
+    toast('Opgeschoond', { label: 'Ongedaan maken', fn: () => { fNotitie.value = before; } });
+  }
+  $('btn-summarize').addEventListener('click', cleanField);
+
+  async function cancelEditor() {
+    stopDictation(true);
+    if (isDirty() && !(await confirmDialog('Wijzigingen weggooien?', 'Wat je hebt ingesproken of getypt wordt niet bewaard.', 'Weggooien', 'danger'))) return;
+    showView('list');
+    render();
+  }
+
+  function showEditError(msg, field) {
+    $('edit-error').textContent = msg;
+    $('edit-error').hidden = false;
+    field.focus();
+  }
+
+  function saveEditor() {
+    stopDictation(true);
+    const naam = fNaam.value.replace(/\s+/g, ' ').trim();
+    const notitie = fNotitie.value.trim();
+    const now = new Date().toISOString();
+    const existing = editingId && records.find(x => x.id === editingId);
+    if (editMode === 'append' && existing) {
+      if (!notitie) return showEditError('Spreek of typ eerst een aanvulling in.', fNotitie);
+      const stamp = fmtDay.format(new Date());
+      existing.notitie = existing.notitie ? existing.notitie + '\n\n' + stamp + ':\n' + notitie : notitie;
+      existing.updatedAt = now;
+    } else if (!naam) {
+      return showEditError('Vul een naam in.', fNaam);
+    } else if (existing) {
+      if (existing.naam !== naam || existing.notitie !== notitie || existing.deleted) {
+        Object.assign(existing, { naam, notitie, deleted: false, updatedAt: now });
+      }
+    } else {
+      records.push({ id: newId(), naam, notitie, createdAt: now, updatedAt: now, deleted: false });
+    }
+    if (!persist()) {
+      dialog('Opslaan mislukt', 'De opslag van dit apparaat is vol of geblokkeerd. Exporteer je notities als JSON via Instellingen.', [{ label: 'OK', value: true, kind: 'primary' }]);
+      return;
+    }
+    $('search').value = '';
+    showView('list');
+    render();
+    toast('Opgeslagen');
+    scheduleAutoSync();
+  }
+
+  $('btn-new').addEventListener('click', () => openEditor(null, 'new'));
+  $('edit-cancel').addEventListener('click', cancelEditor);
+  $('edit-save').addEventListener('click', saveEditor);
+  $('edit-save-top').addEventListener('click', saveEditor);
+  fNaam.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fNotitie.focus(); } });
+  for (const f of [fNaam, fNotitie]) f.addEventListener('input', () => { $('edit-error').hidden = true; });
+
+  // ---------- Spraakherkenning ----------
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  const MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  const STOP_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+  const HINT_KEYBOARD = 'Tip: tik in het veld en gebruik de microfoonknop 🎤 op het iOS-toetsenbord om te dicteren. Tik daarna op ✨ Opschonen.';
+  let dict = null; // { rec, btn, field }
+
+  // Knopinhoud: vaste SVG-iconen (geen gebruikersinvoer) + label via textContent.
+  function setMicState(btn, recording) {
+    btn.classList.toggle('is-recording', recording);
+    btn.setAttribute('aria-pressed', String(recording));
+    btn.innerHTML = recording ? STOP_SVG : MIC_SVG;
+    btn.append(el('span', null, recording ? 'Stop' : 'Spreek'));
+    const which = btn.dataset.target === 'f-naam' ? 'Naam' : 'Notitie';
+    btn.setAttribute('aria-label', recording ? 'Stop met inspreken' : which + ' inspreken');
+  }
+  document.querySelectorAll('.mic').forEach(b => setMicState(b, false));
+
+  function showSpeechHint(reason) {
+    $('speech-hint').textContent = (reason ? reason + ' ' : '') + HINT_KEYBOARD;
+    $('speech-hint').hidden = false;
+  }
+
+  function setListening(text) {
+    $('listening').textContent = text || '';
+    $('listening').hidden = !text;
+  }
+
+  /** Plakt herkende stukken aan elkaar; vangt Safari's herhaalde (cumulatieve) resultaten af. */
+  function joinResults(results) {
+    let out = '';
+    for (let i = 0; i < results.length; i++) {
+      const s = results[i][0].transcript;
+      const sTrim = s.trim();
+      if (!sTrim) continue;
+      if (out && sTrim.startsWith(out.trim())) out = sTrim;
+      else out = out ? out.replace(/\s+$/, '') + ' ' + sTrim : sTrim;
+    }
+    return out;
+  }
+
+  function toggleDictation(btn) {
+    const field = $(btn.dataset.target);
+    if (dict) {
+      const same = dict.btn === btn;
+      stopDictation(false);
+      if (same) return;
+    }
+    if (!SR) { showSpeechHint('Spraakherkenning is hier niet beschikbaar.'); field.focus(); return; }
+    let rec;
+    try { rec = new SR(); } catch (e) { showSpeechHint('Spraakherkenning kon niet starten.'); field.focus(); return; }
+    rec.lang = 'nl-NL';
+    rec.interimResults = true;
+    rec.continuous = field.tagName === 'TEXTAREA';
+    rec.maxAlternatives = 1;
+
+    const base = field.value;
+    const sep = base && !/\s$/.test(base) ? ' ' : '';
+    let spoken = '';
+    rec.onresult = e => {
+      spoken = joinResults(e.results);
+      field.value = spoken ? base + sep + spoken : base;
+      if (field.tagName === 'TEXTAREA') field.scrollTop = field.scrollHeight;
+    };
+    // Na afloop (alle eindresultaten binnen): alleen het nieuw ingesproken stuk opschonen.
+    const autoClean = () => {
+      if (rec.skipClean || field !== fNotitie || settings.autoClean === false || !spoken) return;
+      if (field.value !== base + sep + spoken) return; // tussendoor zelf getypt: niet aankomen
+      const cleaned = C.cleanupText(spoken);
+      if (!cleaned || cleaned === spoken.trim()) return;
+      const glue = !base ? '' : /\n$/.test(base) ? '' : cleaned.startsWith('- ') ? '\n' : sep;
+      const raw = field.value;
+      field.value = base + glue + cleaned;
+      toast('Ingesproken tekst opgeschoond', { label: 'Ongedaan maken', fn: () => { field.value = raw; } });
+    };
+    rec.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') showSpeechHint('Geen toegang tot spraakherkenning of microfoon.');
+      else if (e.error === 'audio-capture') showSpeechHint('Geen microfoon gevonden.');
+      else if (e.error === 'network') showSpeechHint('Spraakherkenning heeft internet nodig.');
+      else if (e.error === 'no-speech') toast('Niets gehoord. Probeer het nog eens.');
+      if (dict && dict.rec === rec) finishDictation();
+    };
+    rec.onend = () => {
+      autoClean();
+      if (dict && dict.rec === rec) finishDictation();
+    };
+
+    dict = { rec, btn, field };
+    setMicState(btn, true);
+    setListening('Luisteren… tik op Stop als je klaar bent.');
+    try { rec.start(); } catch (e) { finishDictation(); showSpeechHint('Spraakherkenning kon niet starten.'); }
+  }
+
+  /** skipClean: true bij opslaan/weggaan, zodat er na afloop niets meer aan het veld verandert. */
+  function stopDictation(skipClean) {
+    if (!dict) return;
+    dict.rec.skipClean = !!skipClean;
+    try { dict.rec.stop(); } catch (e) { /* al gestopt */ }
+    finishDictation();
+  }
+  function finishDictation() {
+    if (!dict) return;
+    setMicState(dict.btn, false);
+    setListening('');
+    dict = null;
+  }
+
+  document.querySelectorAll('.mic').forEach(b => b.addEventListener('click', () => toggleDictation(b)));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopDictation(false); });
+  if (!SR) showSpeechHint('');
+
+  // ---------- Instellingen ----------
+
+  function openSettings() {
+    $('s-repo').value = settings.repo;
+    $('s-token').value = settings.token;
+    $('s-path').value = settings.path || 'contacten.json';
+    $('s-auto').checked = !!settings.autoSync;
+    $('s-summ').checked = settings.autoClean !== false;
+    const total = records.filter(r => !r.deleted).length;
+    $('about').textContent = total + (total === 1 ? ' persoon' : ' personen') + ' opgeslagen op dit apparaat.';
+    renderSyncStatus();
+    showView('settings');
+  }
+
+  function readSettingsForm() {
+    return {
+      repo: $('s-repo').value.trim(),
+      token: $('s-token').value.trim(),
+      path: $('s-path').value.trim() || 'contacten.json',
+      autoSync: $('s-auto').checked,
+      autoClean: $('s-summ').checked
+    };
+  }
+
+  function saveSettings(quiet) {
+    const s = readSettingsForm();
+    if (s.repo || s.token) {
+      try { const c = C.checkSettings(s); s.repo = c.repo; s.path = c.path; }
+      catch (e) { setSyncStatus(e.message, true); return false; }
+    }
+    settings = s;
+    $('s-repo').value = s.repo;
+    $('s-path').value = s.path;
+    if (!storeSet(KEY_SETTINGS, JSON.stringify(settings))) { setSyncStatus('Instellingen konden niet worden bewaard.', true); return false; }
+    if (!quiet) toast('Instellingen opgeslagen');
+    return true;
+  }
+
+  $('btn-settings').addEventListener('click', openSettings);
+  $('settings-back').addEventListener('click', () => { showView('list'); render(); });
+  $('s-save').addEventListener('click', () => { if (saveSettings(false)) renderSyncStatus(); });
+  $('s-auto').addEventListener('change', () => { if (saveSettings(true)) toast($('s-auto').checked ? 'Automatisch synchroniseren staat aan' : 'Automatisch synchroniseren staat uit'); });
+  // Opschonen staat los van GitHub: direct bewaren, ook als de repo-velden (nog) niet kloppen.
+  $('s-summ').addEventListener('change', () => {
+    settings.autoClean = $('s-summ').checked;
+    storeSet(KEY_SETTINGS, JSON.stringify(settings));
+    toast(settings.autoClean ? 'Automatisch opschonen staat aan' : 'Automatisch opschonen staat uit');
+  });
+  $('s-sync').addEventListener('click', () => { if (saveSettings(true)) runSync(true); });
+  $('sync-banner').addEventListener('click', openSettings);
+
+  // ---------- Synchronisatie ----------
+
+  let syncing = false;
+  let syncAgain = false;
+  let lastError = '';
+  let autoTimer = 0;
+
+  function setSyncStatus(text, isError) {
+    $('sync-status').textContent = text;
+    $('sync-status').classList.toggle('is-error', !!isError);
+  }
+
+  function renderSyncStatus() {
+    if (syncing) return setSyncStatus('Bezig met synchroniseren…', false);
+    const last = storeGet(KEY_LASTSYNC);
+    const lastText = last ? 'Laatst gesynchroniseerd: ' + fmt(last) : 'Nog nooit gesynchroniseerd.';
+    if (lastError) setSyncStatus(lastError + '\n' + lastText, true);
+    else setSyncStatus(lastText, false);
+    const banner = $('sync-banner');
+    if (storageOk) {
+      banner.hidden = !(lastError && settings.autoSync);
+      banner.textContent = '⚠ Synchroniseren mislukt: ' + lastError + ' Tik voor instellingen.';
+    }
+  }
+
+  function scheduleAutoSync() {
+    if (!settings.autoSync || !settings.repo || !settings.token) return;
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => runSync(false), 2500);
+  }
+
+  async function runSync(manual) {
+    if (syncing) { syncAgain = true; return; }
+    if (navigator.onLine === false) {
+      lastError = 'Geen internetverbinding.';
+      renderSyncStatus();
+      if (manual) toast(lastError);
+      return;
+    }
+    syncing = true;
+    $('s-sync').disabled = true;
+    renderSyncStatus();
+    const snapshot = JSON.parse(JSON.stringify(records)); // kopie: bewerkingen tijdens sync blijven los
+    try {
+      const res = await C.sync(settings, snapshot, (...a) => fetch(...a));
+      // Opnieuw samenvoegen met de huidige lokale stand (er kan tussendoor iets bewaard zijn).
+      records = C.mergeRecords(records, res.records);
+      persist();
+      storeSet(KEY_LASTSYNC, new Date().toISOString());
+      lastError = '';
+      if (C.serialize(records) !== C.serialize(res.records)) syncAgain = true;
+      render();
+      if (manual) {
+        const parts = [];
+        if (res.created) parts.push('back-upbestand aangemaakt');
+        if (res.pulled) parts.push(res.pulled + ' binnengehaald');
+        if (res.pushed && !res.created) parts.push(res.pushed + ' verstuurd');
+        toast('Gesynchroniseerd' + (parts.length ? ': ' + parts.join(', ') : ' – alles was al bijgewerkt'));
+      }
+    } catch (e) {
+      lastError = e instanceof C.AppError ? e.message : 'Synchroniseren mislukt.';
+      if (manual) toast(lastError);
+    } finally {
+      syncing = false;
+      $('s-sync').disabled = false;
+      renderSyncStatus();
+      if (syncAgain) { syncAgain = false; if (!lastError) scheduleAutoSync(); }
+    }
+  }
+
+  // ---------- Export / import ----------
+
+  async function exportJson() {
+    const content = C.serialize(records);
+    const name = 'contacten-' + new Date().toISOString().slice(0, 10) + '.json';
+    const file = new File([content], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    const url = URL.createObjectURL(file);
+    const a = el('a');
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  async function importJson(file) {
+    try {
+      const imported = C.parseData(await file.text());
+      const before = records;
+      records = C.mergeRecords(records, imported);
+      const changed = C.countChanges(before, records);
+      persist();
+      render();
+      toast(changed ? changed + ' notitie(s) toegevoegd of bijgewerkt' : 'Niets nieuws in dit bestand');
+      if (changed) scheduleAutoSync();
+    } catch (e) {
+      dialog('Importeren mislukt', e instanceof C.AppError ? e.message : 'Het bestand kon niet worden gelezen.', [{ label: 'OK', value: true, kind: 'primary' }]);
+    }
+  }
+
+  $('btn-export').addEventListener('click', exportJson);
+  $('btn-import').addEventListener('click', () => $('import-file').click());
+  $('import-file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (f) importJson(f);
+  });
+
+  // ---------- App-icoon (canvas -> PNG) ----------
+
+  function makeIcon() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 180;
+    const g = c.getContext('2d');
+    if (!g) return null;
+    const grad = g.createLinearGradient(0, 0, 180, 180);
+    grad.addColorStop(0, '#2f2f2c');
+    grad.addColorStop(1, '#1b1b19');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 180, 180);
+    // Microfoonkop (afgeronde capsule)
+    g.fillStyle = '#b8e6fe';
+    const x = 70, y = 30, w = 40, h = 74, r = 20;
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+    g.fill();
+    // Beugel, steel en voet
+    g.strokeStyle = '#b8e6fe';
+    g.lineWidth = 9;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(125, 66);
+    g.lineTo(125, 80);
+    g.arc(90, 80, 35, 0, Math.PI, false);
+    g.lineTo(55, 66);
+    g.stroke();
+    g.beginPath(); g.moveTo(90, 115); g.lineTo(90, 140); g.stroke();
+    g.beginPath(); g.moveTo(66, 144); g.lineTo(114, 144); g.stroke();
+    return c.toDataURL('image/png');
+  }
+
+  try {
+    const icon = makeIcon();
+    if (icon) {
+      for (const rel of ['apple-touch-icon', 'icon']) {
+        const link = document.createElement('link');
+        link.rel = rel;
+        link.href = icon;
+        if (rel === 'apple-touch-icon') link.setAttribute('sizes', '180x180');
+        document.head.append(link);
+      }
+    }
+  } catch (e) { /* icoon is niet essentieel */ }
+
+  // ---------- Start ----------
+
+  render();
+  renderSyncStatus();
+  if (settings.autoSync && settings.repo && settings.token) setTimeout(() => runSync(false), 800);
+  window.addEventListener('online', () => { if (lastError) scheduleAutoSync(); });
+})();
+</script>
+</body>
+</html>
