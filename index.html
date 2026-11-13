@@ -332,6 +332,30 @@
   .view.docked main { padding-bottom: calc(var(--sab) + 330px); }
   @media (prefers-reduced-motion: reduce) { .aurora i { animation: none !important; } }
 
+  /* Eigen uiterlijk: tekstgrootte, accentkleur, gloed */
+  .card .note, .existing p, .field-row textarea, .field-row input { font-size: var(--fs, 17px); }
+  .card h2 { font-size: calc(var(--fs, 17px) + 2px); }
+  :root[data-glow="off"] .aurora { display: none; }
+  :root[data-accent="groen"] { --accent: #b9f0c8; --mark: #b9f0c8; --link: #1b6b3a; --accent-soft: #e4f6e9; --glow-a: rgba(110,215,145,.30); }
+  :root[data-accent="oranje"] { --accent: #ffd6a8; --mark: #ffd6a8; --link: #9a4b00; --accent-soft: #fdeeda; --glow-a: rgba(255,180,100,.30); }
+  :root[data-accent="paars"] { --accent: #dcc8ff; --mark: #dcc8ff; --link: #5b34a8; --accent-soft: #f0e8ff; --glow-a: rgba(180,140,255,.30); }
+  :root[data-accent="roze"] { --accent: #ffc4dc; --mark: #ffc4dc; --link: #a3215a; --accent-soft: #fde8f0; --glow-a: rgba(255,140,185,.28); }
+  @media (prefers-color-scheme: dark) {
+    :root[data-accent="groen"] { --link: #b9f0c8; --accent-soft: #1f3226; --glow-a: rgba(185,240,200,.34); }
+    :root[data-accent="oranje"] { --link: #ffd6a8; --accent-soft: #352a1c; --glow-a: rgba(255,214,168,.32); }
+    :root[data-accent="paars"] { --link: #dcc8ff; --accent-soft: #2b2538; --glow-a: rgba(220,200,255,.34); }
+    :root[data-accent="roze"] { --link: #ffc4dc; --accent-soft: #35222b; --glow-a: rgba(255,196,220,.32); }
+  }
+  .look-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .look-row .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .swatch { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+  .swatch[aria-pressed="true"] { border-color: var(--text); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text); }
+
+  /* Vraag van de dag */
+  .card.prompt { border-style: dashed; background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
+  .prompt-label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--link); }
+  .prompt-q { margin: 6px 0 2px; font-size: 19px; font-weight: 600; line-height: 1.35; }
+
   /* Dialog + toast */
   .backdrop {
     position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45);
@@ -361,7 +385,15 @@
 <body>
 <div id="aurora" class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 
-<script>try { if (localStorage.getItem('wiewasdat.pin.v1')) document.body.classList.add('locked'); } catch (e) {}</script>
+<script>
+try {
+  if (localStorage.getItem('wiewasdat.pin.v1')) document.body.classList.add('locked');
+  var look = JSON.parse(localStorage.getItem('wiewasdat.look.v1') || '{}'), root = document.documentElement;
+  if (look.accent) root.setAttribute('data-accent', look.accent);
+  if (look.glow === false) root.setAttribute('data-glow', 'off');
+  if (look.fs) root.style.setProperty('--fs', look.fs + 'px');
+} catch (e) {}
+</script>
 <div id="splash" class="splash" aria-hidden="true">
   <div class="splash-logo"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="splash-name">Persoonlijk logboek</div>
@@ -480,6 +512,17 @@
       <p id="pin-status" class="small"></p>
       <button id="pin-set" class="secondary" type="button">Pincode instellen</button>
       <button id="pin-off" class="secondary danger-text" type="button" hidden>Pincode uitzetten</button>
+    </div>
+    <div class="group">
+      <h2>Uiterlijk</h2>
+      <span class="group-title" id="lbl-size">Tekstgrootte</span>
+      <div class="look-row" id="look-size" role="group" aria-labelledby="lbl-size"></div>
+      <span class="group-title" id="lbl-accent">Accentkleur</span>
+      <div class="look-row" id="look-accent" role="group" aria-labelledby="lbl-accent"></div>
+      <div class="switch-row">
+        <span id="glow-label">Bewegende gloed op de achtergrond</span>
+        <label class="switch"><input id="s-glow" type="checkbox" aria-labelledby="glow-label"><i></i></label>
+      </div>
     </div>
     <div class="group">
       <h2>Back-up via GitHub</h2>
@@ -979,6 +1022,7 @@
   const KEY_VIEW = 'wiewasdat.view.v1';     // gekozen tabblad + sortering
   const KEY_PIN = 'wiewasdat.pin.v1';
   const KEY_PINFAIL = 'wiewasdat.pinfail.v1';
+  const KEY_LOOK = 'wiewasdat.look.v1';       // tekstgrootte, accentkleur, gloed
   const LOCK_AFTER_MS = 30000;
 
   const $ = id => document.getElementById(id);
@@ -1269,6 +1313,60 @@
     return li;
   }
 
+  // ---------- Vraag van de dag (Verhalen) ----------
+  const PROMPTS = [
+    'Wat was het mooiste moment van deze week?',
+    'Waar heb je deze week hard om gelachen?',
+    'Wat heb je vandaag geleerd?',
+    'Welk gesprek is je bijgebleven, en waarom?',
+    'Waar ben je deze maand trots op?',
+    'Wat ging er laatst helemaal mis, en hoe liep het af?',
+    'Wie heeft je onlangs geholpen, en waarmee?',
+    'Wat is je vroegste herinnering?',
+    'Welke reis vergeet je nooit meer?',
+    'Wat was je spannendste moment op je werk of stage?',
+    'Welk advies heb je ooit gekregen dat je nog steeds gebruikt?',
+    'Wat deed je het liefst toen je tien was?',
+    'Welke beslissing heeft je leven een andere kant op gestuurd?',
+    'Wat zou je over een jaar nog willen weten van vandaag?',
+    'Wanneer voelde je je voor het laatst echt gelukkig?',
+    'Wat is het gekste dat je ooit hebt meegemaakt?',
+    'Welke fout heeft je uiteindelijk iets goeds opgeleverd?',
+    'Wie bewonder je, en wat heb je van diegene geleerd?',
+    'Wat was een moment waarop je iets durfde wat je eng vond?',
+    'Welk feest of welke avond blijft je altijd bij?',
+    'Wat heb je deze week voor het eerst gedaan?',
+    'Waar maak je je de laatste tijd druk om?',
+    'Welke plek voelt voor jou als thuis, en waarom?',
+    'Wat is een verhaal dat je familie altijd over jou vertelt?',
+    'Wat heb je onlangs gemaakt waar je blij mee bent?',
+    'Welke ontmoeting had je nooit willen missen?',
+    'Wat wilde je vroeger worden, en hoe kijk je daar nu naar?',
+    'Wat is het beste dat je dit jaar hebt gegeten, en met wie?',
+    'Waar kijk je de komende tijd naar uit?',
+    'Wat zou je tegen jezelf van vijf jaar geleden zeggen?'
+  ];
+
+  function promptOfToday() {
+    const d = new Date();
+    const day = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+    return PROMPTS[(day + (viewState.promptSkip || 0)) % PROMPTS.length];
+  }
+
+  function renderPrompt() {
+    const q = promptOfToday();
+    const li = el('li', 'card prompt');
+    li.append(el('p', 'prompt-label', 'Vraag van de dag'), el('p', 'prompt-q', q));
+    const actions = el('div', 'card-actions');
+    actions.append(
+      actionButton('Andere vraag', 'Toon een andere vraag', () => { viewState.promptSkip = (viewState.promptSkip || 0) + 1; saveViewState(); render(); }),
+      actionButton('Typen', 'Beantwoord deze vraag door te typen', () => openEditor(null, 'new', 'verhaal', { titel: q })),
+      actionButton('🎤 Vertel', 'Beantwoord deze vraag door in te spreken', () => openEditor(null, 'new', 'verhaal', { quick: true, titel: q }))
+    );
+    li.append(actions);
+    return li;
+  }
+
   function setPlaceFilter(place) {
     placeFilter = place;
     $('search').value = '';
@@ -1291,6 +1389,7 @@
       if (g.label) nodes.push(el('li', 'group-head', g.label + ' · ' + g.items.length));
       for (const r of g.items) nodes.push(renderCard(r, toks));
     }
+    if (story && !toks.length) nodes.unshift(renderPrompt());
     nodes.forEach((n, i) => n.style.setProperty('--i', Math.min(i, 12)));
     $('list').classList.toggle('stagger', animate === true);
     $('list').replaceChildren(...nodes);
@@ -1389,7 +1488,7 @@
     fNaam.value = r && !story ? r.naam : '';
     fNaam.readOnly = append;
     nameMic.hidden = append;
-    fTitel.value = r && story ? r.titel : '';
+    fTitel.value = r && story ? r.titel : (story && opts && opts.titel) || '';
     fTitel.readOnly = append;
     fWaar.value = r && !story ? r.waar : '';
     fDatum.value = story ? ((r && r.datum) || today()) : '';
@@ -2000,6 +2099,44 @@
       coverOnly = false;
     }
   });
+
+  // ---------- Uiterlijk ----------
+  const SIZES = [['Klein', 16], ['Normaal', 17], ['Groot', 20], ['Extra groot', 23]];
+  const ACCENTS = [['blauw', '#b8e6fe'], ['groen', '#b9f0c8'], ['oranje', '#ffd6a8'], ['paars', '#dcc8ff'], ['roze', '#ffc4dc']];
+  const look = Object.assign({ fs: 17, accent: 'blauw', glow: true }, storeJson(KEY_LOOK, {}));
+
+  function applyLook() {
+    const root = document.documentElement;
+    root.style.setProperty('--fs', look.fs + 'px');
+    if (look.accent && look.accent !== 'blauw') root.setAttribute('data-accent', look.accent); else root.removeAttribute('data-accent');
+    if (look.glow === false) root.setAttribute('data-glow', 'off'); else root.removeAttribute('data-glow');
+    for (const b of $('look-size').children) b.setAttribute('aria-pressed', String(Number(b.dataset.fs) === look.fs));
+    for (const b of $('look-accent').children) b.setAttribute('aria-pressed', String(b.dataset.accent === look.accent));
+    $('s-glow').checked = look.glow !== false;
+  }
+  function setLook(change) {
+    Object.assign(look, change);
+    storeSet(KEY_LOOK, JSON.stringify(look));
+    applyLook();
+  }
+  for (const [label, fs] of SIZES) {
+    const b = el('button', 'chip', label);
+    b.type = 'button';
+    b.dataset.fs = fs;
+    b.addEventListener('click', () => setLook({ fs }));
+    $('look-size').append(b);
+  }
+  for (const [name, color] of ACCENTS) {
+    const b = el('button', 'swatch');
+    b.type = 'button';
+    b.dataset.accent = name;
+    b.style.background = color;
+    b.setAttribute('aria-label', 'Accentkleur ' + name);
+    b.addEventListener('click', () => setLook({ accent: name }));
+    $('look-accent').append(b);
+  }
+  $('s-glow').addEventListener('change', () => setLook({ glow: $('s-glow').checked }));
+  applyLook();
 
   // ---------- Instellingen ----------
 
