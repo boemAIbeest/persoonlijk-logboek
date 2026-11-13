@@ -1,11 +1,15 @@
 # Persoonlijk logboek
 
-Spreek kort in wie je hebt ontmoet. Zoek later op naam (of op een woord uit de notitie) om te zien wie dat ook alweer was. De hele app staat in één bestand: `index.html`. Er is geen server en er zijn geen libraries.
+Twee onderdelen in één app: **Contacten** (wie heb je ontmoet, waar, wat moet je onthouden) en **Verhalen** (wat je zelf hebt meegemaakt, verteld in je eigen woorden). De hele app staat in één bestand: `index.html`. Er is geen server en er zijn geen libraries.
 
-- **Nieuw**: naam en notitie typen of inspreken (microfoonknop per veld).
-- **Aanvullen**: extra tekst bij een bestaande persoon. Die komt met de datum onder de oude notitie.
-- **Opschonen**: na het inspreken haalt de app stopwoordjes ("eh", "zeg maar"), herhalingen en losse brokjes weg en maakt er korte zinnen van. Dit gebeurt op je telefoon zelf, zonder internet en zonder AI-dienst. Met *Ongedaan maken* krijg je de ruwe tekst terug.
-- **Back-up**: synchroniseert met een JSON-bestand in je eigen private GitHub-repo.
+- **Inspreken**: één tik en de app luistert. Bij contacten haalt hij uit "Jan de Vries, ontmoet op de borrel, werkt bij een bank" zelf de naam en de plek. Controleer het even voordat je opslaat.
+- **Waar ontmoet**: een eigen veld met suggesties uit eerdere plekken. Tik op 📍 bij een persoon om iedereen van die plek te zien.
+- **Verhalen**: met een titel (of automatisch de eerste woorden), de datum waarop het gebeurde, en lang achter elkaar inspreken.
+- **Aanvullen**: extra tekst bij een persoon of verhaal. Die komt met de datum onder de bestaande tekst.
+- **Opschonen**: stopwoordjes ("eh", "zeg maar") en herhalingen eruit. Bij contacten wordt het een kort lijstje, bij verhalen blijft het lopende tekst. Dit gebeurt op je telefoon zelf, zonder AI-dienst. Met *Ongedaan maken* krijg je de ruwe tekst terug.
+- **Sorteren**: nieuwste, laatst bijgewerkt, naam A–Z, per maand, per plek (contacten) of per jaar (verhalen).
+- **Pincode**: 4–6 cijfers bij het openen en na 30 seconden weg. In de app-wisselaar is het scherm afgedekt. Na 5 foute pogingen moet je even wachten. Let op: dit is een slot op het scherm, geen versleuteling. Pincode vergeten? Dan kun je alles op het toestel wissen en terugzetten via de GitHub-back-up.
+- **Back-up**: synchroniseert contacten én verhalen met een JSON-bestand in je eigen private GitHub-repo.
 
 ---
 

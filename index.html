@@ -185,9 +185,50 @@
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .two .secondary { margin-top: 12px; }
 
+  /* Tabbladen, sorteren, filter */
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; padding: 4px; background: var(--field); border: 1px solid var(--line); border-radius: var(--r); }
+  .tabs button { min-height: 40px; border: 0; border-radius: 6px; background: none; color: var(--muted); font-weight: 600; font-size: 15px; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+  .sort select { min-height: 36px; border: 1px solid var(--line); background: var(--field); border-radius: var(--r); padding: 0 8px; font-size: 14px; color: var(--text); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .filter-chip { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 12px; padding: 0 4px 0 12px; min-height: 40px; border-radius: var(--r); background: var(--accent-soft); color: var(--link); font-size: 15px; }
+  .filter-chip button { min-width: 36px; min-height: 36px; border: 0; background: none; color: inherit; font-size: 20px; }
+  .group-head { margin: 10px 2px -2px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .place { display: inline-flex; align-items: center; gap: 4px; margin: 6px 0 0; padding: 2px 10px; min-height: 30px; border: 1px solid var(--line); border-radius: 6px; background: var(--accent-soft); color: var(--link); font-size: 14px; font-weight: 600; }
+  .card .note.clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .more { border: 0; background: none; color: var(--link); font-weight: 600; font-size: 15px; padding: 4px 0; min-height: 36px; }
+  .field-row textarea.tall { min-height: 300px; }
+  .field-row input[type=date] { -webkit-appearance: none; appearance: none; text-align: left; }
+  .fab-row { position: fixed; z-index: 6; right: calc(var(--sar) + 18px); bottom: calc(var(--sab) + 18px); display: flex; gap: 10px; }
+  .fab-row .fab { position: static; }
+  .fab.fab-mic { background: var(--card); color: var(--link); border: 1px solid var(--line); }
+
+  /* Pincode */
+  .lock {
+    position: fixed; inset: 0; z-index: 50; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    padding: calc(var(--sat) + 20px) 20px calc(var(--sab) + 20px);
+  }
+  .lock-inner { width: 100%; max-width: 320px; text-align: center; }
+  .lock-inner svg { width: 40px; height: 40px; color: var(--link); }
+  .lock h2 { margin: 10px 0 18px; font-size: 21px; }
+  .pin-dots { display: flex; justify-content: center; gap: 14px; min-height: 18px; }
+  .pin-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); }
+  .pin-dots i.on { background: var(--accent); border-color: var(--accent); }
+  .pin-dots.shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .lock-msg { min-height: 22px; margin: 14px 0 10px; color: var(--danger); font-size: 15px; }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; justify-items: center; }
+  .keypad button { width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--line); background: var(--field); font-size: 28px; font-weight: 500; }
+  .keypad button.fn { border: 0; background: none; font-size: 22px; color: var(--link); }
+  .keypad button:disabled { opacity: .3; }
+  .lock-actions { margin-top: 16px; display: flex; justify-content: center; gap: 16px; }
+  body.locked .view, body.locked .fab-row { visibility: hidden; }
+  .danger-text { color: var(--danger) !important; }
+
   /* Dialog + toast */
   .backdrop {
-    position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.45);
+    position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45);
     display: flex; align-items: flex-end; justify-content: center;
     padding: 16px calc(var(--sar) + 12px) calc(var(--sab) + 12px) calc(var(--sal) + 12px);
   }
@@ -201,7 +242,7 @@
   @media (min-width: 600px) { .backdrop { align-items: center; } }
 
   .toast {
-    position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+    position: fixed; z-index: 70; left: 50%; transform: translateX(-50%);
     bottom: calc(var(--sab) + 92px); width: max-content; max-width: calc(100vw - 32px);
     background: #1a1915; color: #faf9f5; border-radius: var(--r); padding: 6px 6px 6px 16px;
     display: flex; align-items: center; gap: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.3); font-size: 15px;
@@ -213,6 +254,8 @@
 </head>
 <body>
 
+<script>try { if (localStorage.getItem('wiewasdat.pin.v1')) document.body.classList.add('locked'); } catch (e) {}</script>
+
 <!-- ===== Lijst ===== -->
 <section id="view-list" class="view">
   <header class="topbar">
@@ -222,38 +265,73 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
     </div>
+    <div class="tabs" role="tablist" aria-label="Onderdeel">
+      <button id="tab-contact" role="tab" type="button" data-tab="contact" aria-selected="true" aria-controls="list">Contacten</button>
+      <button id="tab-verhaal" role="tab" type="button" data-tab="verhaal" aria-selected="false" aria-controls="list">Verhalen</button>
+    </div>
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="search" type="search" placeholder="Zoek op naam of notitie" aria-label="Zoeken" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <input id="search" type="search" placeholder="Zoek op naam, plek of notitie" aria-label="Zoeken" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
       <button id="search-clear" class="icon-btn" type="button" aria-label="Zoekopdracht wissen" hidden>×</button>
     </div>
   </header>
   <main>
     <button id="sync-banner" class="banner" type="button" hidden></button>
-    <div class="meta-row"><span id="count" class="muted small"></span></div>
-    <ul id="list" class="list"></ul>
+    <div class="meta-row">
+      <span id="count" class="muted small"></span>
+      <label class="sort"><span class="sr">Sorteren</span><select id="sort"></select></label>
+    </div>
+    <div id="place-filter" class="filter-chip" hidden><span>📍 <span id="place-filter-name"></span></span><button id="place-filter-clear" type="button" aria-label="Plekfilter wissen">×</button></div>
+    <ul id="list" class="list" role="tabpanel"></ul>
     <div id="empty" class="empty" hidden><strong id="empty-title"></strong><span id="empty-text"></span></div>
   </main>
+</section>
+<div class="fab-row" id="fab-row">
+  <button id="btn-quick" class="fab fab-mic" type="button" aria-label="Meteen inspreken">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    Inspreken
+  </button>
   <button id="btn-new" class="fab" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     Nieuw
   </button>
-</section>
+</div>
 
-<!-- ===== Nieuwe / bewerk notitie ===== -->
+<!-- ===== Nieuw / bewerken / aanvullen ===== -->
 <section id="view-edit" class="view" hidden>
   <header class="topbar">
     <div class="bar">
       <button id="edit-cancel" class="text-btn" type="button">Annuleer</button>
-      <h1 id="edit-title" class="center">Nieuwe notitie</h1>
+      <h1 id="edit-title" class="center">Nieuw contact</h1>
       <button id="edit-save-top" class="text-btn" type="button">Bewaar</button>
     </div>
   </header>
   <main class="form">
-    <label for="f-naam">Naam</label>
-    <div class="field-row">
-      <input id="f-naam" type="text" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="Bijv. Jan de Vries">
-      <button class="mic" type="button" data-target="f-naam" aria-pressed="false" aria-label="Naam inspreken"></button>
+    <div id="row-naam">
+      <label for="f-naam">Naam</label>
+      <div class="field-row">
+        <input id="f-naam" type="text" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="Bijv. Jan de Vries">
+        <button class="mic" type="button" data-target="f-naam" aria-pressed="false" aria-label="Naam inspreken"></button>
+      </div>
+    </div>
+    <div id="row-waar">
+      <label for="f-waar">Waar ontmoet</label>
+      <div class="field-row">
+        <input id="f-waar" type="text" list="waar-list" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" placeholder="Bijv. borrel TSBC, beurs Utrecht">
+      </div>
+      <datalist id="waar-list"></datalist>
+    </div>
+    <div id="row-titel" hidden>
+      <label for="f-titel">Titel</label>
+      <div class="field-row">
+        <input id="f-titel" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="next" placeholder="Leeg laten = eerste woorden van je verhaal">
+      </div>
+    </div>
+    <div id="row-datum" hidden>
+      <label for="f-datum">Wanneer gebeurde het?</label>
+      <div class="field-row">
+        <input id="f-datum" type="date">
+      </div>
     </div>
     <div id="existing" class="existing" hidden>
       <span class="muted small">Wat er al staat</span>
@@ -261,12 +339,11 @@
     </div>
     <label id="label-notitie" for="f-notitie">Notitie</label>
     <div class="field-row top">
-      <textarea id="f-notitie" rows="7" autocapitalize="sentences" placeholder="Waar ontmoet, wat doet diegene, iets om te onthouden…"></textarea>
-      <button class="mic" type="button" data-target="f-notitie" aria-pressed="false" aria-label="Notitie inspreken"></button>
+      <textarea id="f-notitie" rows="7" autocapitalize="sentences" placeholder="Wat doet diegene, iets om te onthouden…"></textarea>
+      <button class="mic" type="button" data-target="f-notitie" aria-pressed="false" aria-label="Tekst inspreken"></button>
     </div>
     <div class="tool-row">
       <button id="btn-summarize" class="chip" type="button">✨ Opschonen</button>
-      <span id="summarize-status" class="muted small" aria-live="polite"></span>
     </div>
     <p id="listening" class="listening" aria-live="polite" hidden></p>
     <p id="speech-hint" class="hint" hidden></p>
@@ -287,10 +364,17 @@
   </header>
   <main class="settings">
     <div class="group">
+      <h2>Pincode</h2>
+      <p class="muted small">Vraagt een pincode bij het openen en als je langer dan 30 seconden weg was. Dit is een slot op het scherm; de gegevens zelf worden er niet mee versleuteld.</p>
+      <p id="pin-status" class="small"></p>
+      <button id="pin-set" class="secondary" type="button">Pincode instellen</button>
+      <button id="pin-off" class="secondary danger-text" type="button" hidden>Pincode uitzetten</button>
+    </div>
+    <div class="group">
       <h2>Back-up via GitHub</h2>
-      <p class="muted small">Gebruik een private repo en een fine-grained token met alleen “Contents: Read and write” op die repo.</p>
+      <p class="muted small">Gebruik een private repo en een fine-grained token met alleen “Contents: Read and write” op die repo. Contacten én verhalen gaan mee.</p>
       <label for="s-repo">Repo (owner/repo)</label>
-      <input id="s-repo" type="text" placeholder="jouwnaam/contacten-backup" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input id="s-repo" type="text" placeholder="boemAIbeest/persoonlijk-logboek-backup" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <label for="s-token">Token</label>
       <input id="s-token" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <label for="s-path">Bestandspad</label>
@@ -305,7 +389,7 @@
     </div>
     <div class="group">
       <h2>Opschonen van ingesproken tekst</h2>
-      <p class="muted small">Haalt stopwoordjes (“eh”, “zeg maar”), herhalingen en losse brokjes weg en maakt er korte, nette zinnen van. Werkt volledig op dit apparaat, zonder internet.</p>
+      <p class="muted small">Haalt stopwoordjes (“eh”, “zeg maar”), herhalingen en losse brokjes weg. Bij contacten wordt het een kort lijstje, bij verhalen blijft het lopende tekst. Werkt volledig op dit apparaat.</p>
       <div class="switch-row">
         <span id="summ-label">Automatisch opschonen na inspreken</span>
         <label class="switch"><input id="s-summ" type="checkbox" aria-labelledby="summ-label"><i></i></label>
@@ -313,7 +397,7 @@
     </div>
     <div class="group">
       <h2>Noodoplossing</h2>
-      <p class="muted small">Bewaar of herstel alle notities als JSON-bestand. Importeren voegt samen; er gaat niets verloren.</p>
+      <p class="muted small">Bewaar of herstel alles als JSON-bestand. Importeren voegt samen; er gaat niets verloren.</p>
       <div class="two">
         <button id="btn-export" class="secondary" type="button">Exporteer JSON</button>
         <button id="btn-import" class="secondary" type="button">Importeer JSON</button>
@@ -327,6 +411,21 @@
     </div>
   </main>
 </section>
+
+<!-- ===== Pincodescherm ===== -->
+<div id="lock" class="lock" hidden>
+  <div class="lock-inner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <h2 id="lock-title">Voer je pincode in</h2>
+    <div id="pin-dots" class="pin-dots" aria-hidden="true"></div>
+    <p id="lock-msg" class="lock-msg" role="alert"></p>
+    <div id="keypad" class="keypad"></div>
+    <div class="lock-actions">
+      <button id="lock-cancel" class="text-btn" type="button" hidden>Annuleer</button>
+      <button id="lock-forgot" class="text-btn" type="button">Pincode vergeten?</button>
+    </div>
+  </div>
+</div>
 
 <!-- Dialoog en melding -->
 <div id="dialog" class="backdrop" hidden>
@@ -365,7 +464,7 @@
 
   function matches(rec, toks) {
     if (!toks.length) return true;
-    const hay = fold(rec.naam + '\n' + rec.notitie);
+    const hay = fold([rec.naam, rec.titel, rec.waar, rec.notitie].filter(Boolean).join('\n'));
     return toks.every(t => hay.includes(t));
   }
 
@@ -454,6 +553,69 @@
     return kept.map(k => '- ' + k.s).join('\n');
   }
 
+  /**
+   * Opschonen voor verhalen: stopwoorden en herhalingen eruit, maar het blijft lopende tekst
+   * (geen lijstje, alinea's blijven behouden).
+   */
+  function cleanupStory(text) {
+    const paras = String(text || '').replace(/\r/g, '').split(/\n\s*\n/);
+    const out = [];
+    for (const para of paras) {
+      const kept = [];
+      let prevKey = '';
+      for (const p of para.split(/(?<=[.!?])\s+|\n+/)) {
+        const s = cleanSentence(p);
+        const key = sentenceKey(s);
+        if (!key || THROWAWAY.has(key) || key === prevKey) continue; // direct herhaald
+        kept.push(s);
+        prevKey = key;
+      }
+      if (kept.length) out.push(kept.join(' '));
+    }
+    return out.join('\n\n');
+  }
+
+  // ---------- Naam en plek herkennen in één ingesproken zin ----------
+
+  // Woorden waarmee een zin vaak begint, maar die geen naam zijn.
+  const NOT_NAME = new Set(('ik hij zij ze we wij jij je u dit dat de het een net eh ehm oke ja nee nou dus en maar ' +
+    'ontmoet werkt heeft had is was woont gisteren vandaag morgen vanavond vanochtend op bij in met via naast ' +
+    'leuke leuk aardige aardig mijn zijn haar onze collega klant vriend vriendin buurman buurvrouw meneer mevrouw ' +
+    'gesproken gezien kende kent zat stond sprak').split(' '));
+  const PARTICLES = new Set(['van', 'de', 'der', 'den', 'het', "'t", 'ter', 'ten', 'te', 'la', 'le', 'du', 'di', 'da', 'del', 'von', 'zu', 'el', 'al', 'bin', 'ben', 'op', 'in']);
+  const LEAD_IN = /^\s*(?:(?:dit|dat)\s+(?:is|was)|ik\s+(?:sprak|ontmoette|heb\s+gesproken\s+met)|net\s+gesproken\s+met|gesproken\s+met|naam\s*:?)\s+/i;
+
+  /**
+   * Haalt een naam van het begin van de tekst: "Jan de Vries, ontmoet op…" -> {naam, rest}.
+   * Een naam is: hoofdletterwoorden met eventueel tussenvoegsels, eindigend op een hoofdletterwoord.
+   * Eén los woord telt alleen als er een komma achter staat of het geen gewoon beginwoord is.
+   */
+  function extractName(text) {
+    const src = String(text || '').replace(LEAD_IN, '');
+    const words = []; // { t, end, cap }
+    for (const m of src.matchAll(/[\p{L}'’-]+|[,.;:!?\n]/gu)) {
+      const t = m[0];
+      if (/^[,.;:!?\n]$/.test(t) || words.length >= 6) break;
+      const low = fold(t);
+      if (/^\p{Lu}/u.test(t) && !(words.length === 0 && NOT_NAME.has(low))) words.push({ t, end: m.index + t.length, cap: true });
+      else if (words.length && PARTICLES.has(low)) words.push({ t, end: m.index + t.length, cap: false });
+      else break;
+    }
+    while (words.length && !words[words.length - 1].cap) words.pop(); // niet eindigen op "de"/"van"
+    if (!words.length) return null;
+    const rest = src.slice(words[words.length - 1].end).replace(/^\s*[,.;:]?\s*/, '');
+    return { naam: words.map(w => w.t).join(' '), rest };
+  }
+
+  /** "ontmoet op de borrel van TSBC, werkt bij…" -> "borrel van TSBC" */
+  function extractPlace(text) {
+    const m = String(text || '').match(/(?:ontmoet|gesproken|gezien|leren\s+kennen|tegengekomen|kennengeleerd)\s+(?:op|bij|tijdens|in|via)\s+(?:de\s+|het\s+|een\s+)?([^,.;!?\n]+)/i);
+    if (!m) return '';
+    let place = m[1].split(/\s+(?:en|hij|zij|ze|werkt|heeft|woont|is|was|die|dat)(?=\s|$)/i)[0].trim();
+    if (place.length > 40) place = place.slice(0, 40).replace(/\s+\S*$/, '');
+    return place;
+  }
+
   // ---------- Records ----------
 
   function isoOrNull(v) {
@@ -469,6 +631,10 @@
     return {
       id: r.id.trim(),
       naam: typeof r.naam === 'string' ? r.naam : '',
+      soort: r.soort === 'verhaal' ? 'verhaal' : 'contact',
+      titel: typeof r.titel === 'string' ? r.titel : '',
+      datum: typeof r.datum === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.datum) ? r.datum : '',
+      waar: typeof r.waar === 'string' ? r.waar : '',
       notitie: typeof r.notitie === 'string' ? r.notitie : '',
       createdAt,
       updatedAt: isoOrNull(r.updatedAt) || createdAt,
@@ -533,7 +699,7 @@
     let n = 0;
     for (const r of normalizeList(after)) {
       const b = m.get(r.id);
-      if (!b || b.updatedAt !== r.updatedAt || b.deleted !== r.deleted || b.naam !== r.naam || b.notitie !== r.notitie) n++;
+      if (!b || JSON.stringify(b) !== JSON.stringify(r)) n++;
     }
     return n;
   }
@@ -672,7 +838,7 @@
   }
 
   global.Core = {
-    AppError, fold, tokens, matches, highlightRanges, cleanupText,
+    AppError, fold, tokens, matches, highlightRanges, cleanupText, cleanupStory, extractName, extractPlace,
     normalizeRecord, normalizeList, parseData, serialize, mergeRecords, countChanges,
     utf8ToB64, b64ToUtf8, checkSettings, encodePath, sync
   };
@@ -687,6 +853,10 @@
   const KEY_DATA = 'wiewasdat.records.v1';
   const KEY_SETTINGS = 'wiewasdat.settings.v1';
   const KEY_LASTSYNC = 'wiewasdat.lastsync.v1';
+  const KEY_VIEW = 'wiewasdat.view.v1';     // gekozen tabblad + sortering
+  const KEY_PIN = 'wiewasdat.pin.v1';
+  const KEY_PINFAIL = 'wiewasdat.pinfail.v1';
+  const LOCK_AFTER_MS = 30000;
 
   const $ = id => document.getElementById(id);
   const el = (tag, cls, text) => {
@@ -704,6 +874,9 @@
   function storeSet(key, value) {
     try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
   }
+  function storeJson(key, fallback) {
+    try { const v = JSON.parse(storeGet(key) || 'null'); return v == null ? fallback : v; } catch (e) { return fallback; }
+  }
 
   function loadRecords() {
     const raw = storeGet(KEY_DATA);
@@ -713,35 +886,48 @@
 
   function loadSettings() {
     const def = { repo: '', token: '', path: 'contacten.json', autoSync: false, autoClean: true };
-    try { return Object.assign(def, JSON.parse(storeGet(KEY_SETTINGS) || '{}')); } catch (e) { return def; }
+    return Object.assign(def, storeJson(KEY_SETTINGS, {}));
   }
 
   let records = loadRecords();
   let settings = loadSettings();
-  let storageOk = storeSet('wiewasdat.test', '1');
+  const storageOk = storeSet('wiewasdat.test', '1');
+  const viewState = Object.assign({ tab: 'contact', sort: { contact: 'nieuw', verhaal: 'datum' } }, storeJson(KEY_VIEW, {}));
+  let placeFilter = '';
 
-  /** Schrijft alle records weg; false als het niet lukt (opslag vol/geblokkeerd). */
-  function persist() {
-    return storeSet(KEY_DATA, JSON.stringify(records));
-  }
+  function persist() { return storeSet(KEY_DATA, JSON.stringify(records)); }
+  function saveViewState() { storeSet(KEY_VIEW, JSON.stringify(viewState)); }
 
   function newId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     const b = new Uint8Array(16);
-    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => { b[i] = Math.random() * 256; });
+    if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(b);
+    else for (let i = 0; i < 16; i++) b[i] = Math.random() * 256;
     return Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
   }
 
-  // ---------- Opmaak van datums ----------
+  // ---------- Datums ----------
 
   const fmtDate = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const fmtDay = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmtLongDay = new Intl.DateTimeFormat('nl-NL', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  const fmtMonth = new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric' });
   const fmt = iso => fmtDate.format(new Date(iso));
+  const pad = n => String(n).padStart(2, '0');
+  const ymdLocal = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const today = () => ymdLocal(new Date());
+  const ymdToDate = ymd => { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d); };
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+  /** Datum waarop een record "speelt": verhaal = gekozen datum, contact = moment van opslaan. */
+  const dayOf = r => (r.soort === 'verhaal' && r.datum) ? r.datum : ymdLocal(new Date(r.createdAt));
 
   // ---------- Schermen ----------
 
   const views = { list: $('view-list'), edit: $('view-edit'), settings: $('view-settings') };
   function showView(name) {
     for (const k in views) views[k].hidden = k !== name;
+    $('fab-row').hidden = name !== 'list';
     window.scrollTo(0, 0);
   }
 
@@ -779,6 +965,7 @@
 
   const confirmDialog = (title, msg, okLabel, kind) =>
     dialog(title, msg, [{ label: okLabel, value: true, kind: kind || 'primary' }, { label: 'Annuleer', value: false }]).then(v => v === true);
+  const infoDialog = (title, msg) => dialog(title, msg, [{ label: 'OK', value: true, kind: 'primary' }]);
 
   // ---------- Toast ----------
 
@@ -798,6 +985,58 @@
   }
   function hideToast() { $('toast').hidden = true; }
 
+  // ---------- Tabbladen en sortering ----------
+
+  const SORTS = {
+    contact: [['nieuw', 'Nieuwste eerst'], ['bijgewerkt', 'Laatst bijgewerkt'], ['naam', 'Naam A–Z'], ['maand', 'Per maand'], ['plek', 'Per plek']],
+    verhaal: [['datum', 'Nieuwste eerst'], ['oud', 'Oudste eerst'], ['bijgewerkt', 'Laatst bijgewerkt'], ['maand', 'Per maand'], ['jaar', 'Per jaar']]
+  };
+
+  function setTab(tab) {
+    if (tab !== 'contact' && tab !== 'verhaal') tab = 'contact';
+    viewState.tab = tab;
+    saveViewState();
+    placeFilter = '';
+    $('search').value = '';
+    for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    $('search').placeholder = tab === 'verhaal' ? 'Zoek in je verhalen' : 'Zoek op naam, plek of notitie';
+    const sel = $('sort');
+    sel.replaceChildren(...SORTS[tab].map(([v, label]) => { const o = el('option', null, label); o.value = v; return o; }));
+    const cur = viewState.sort[tab];
+    sel.value = SORTS[tab].some(s => s[0] === cur) ? cur : SORTS[tab][0][0];
+    render();
+  }
+  for (const b of document.querySelectorAll('.tabs button')) b.addEventListener('click', () => setTab(b.dataset.tab));
+  $('sort').addEventListener('change', () => { viewState.sort[viewState.tab] = $('sort').value; saveViewState(); render(); });
+
+  /** Sorteert en (optioneel) groepeert; geeft [{label, items}] terug. */
+  function arrange(list, by) {
+    const desc = f => (a, b) => (f(a) < f(b) ? 1 : f(a) > f(b) ? -1 : 0);
+    const byDay = desc(r => dayOf(r) + '|' + r.createdAt);
+    let groupOf = null;
+    const arr = list.slice();
+    switch (by) {
+      case 'bijgewerkt': arr.sort(desc(r => r.updatedAt)); break;
+      case 'naam': arr.sort((a, b) => a.naam.localeCompare(b.naam, 'nl', { sensitivity: 'base' })); break;
+      case 'oud': arr.sort((a, b) => -byDay(a, b)); break;
+      case 'maand': arr.sort(byDay); groupOf = r => cap(fmtMonth.format(ymdToDate(dayOf(r)))); break;
+      case 'jaar': arr.sort(byDay); groupOf = r => dayOf(r).slice(0, 4); break;
+      case 'plek': arr.sort(byDay); groupOf = r => r.waar.trim() || 'Plek onbekend'; break;
+      default: arr.sort(byDay);
+    }
+    if (!groupOf) return [{ label: '', items: arr }];
+    const groups = new Map();
+    for (const r of arr) {
+      const label = groupOf(r);
+      const key = C.fold(label);
+      if (!groups.has(key)) groups.set(key, { label, items: [] });
+      groups.get(key).items.push(r);
+    }
+    const out = [...groups.values()];
+    if (by === 'plek') out.sort((a, b) => (a.label === 'Plek onbekend') - (b.label === 'Plek onbekend'));
+    return out;
+  }
+
   // ---------- Lijst en zoeken ----------
 
   /** Zet tekst in een element met <mark> rond de zoektreffers (zonder innerHTML). */
@@ -812,67 +1051,113 @@
     if (pos < text.length) node.append(document.createTextNode(text.slice(pos)));
   }
 
+  function actionButton(label, aria, fn, cls) {
+    const b = el('button', cls || null, label);
+    b.type = 'button';
+    b.setAttribute('aria-label', aria);
+    b.addEventListener('click', fn);
+    return b;
+  }
+
   function renderCard(r, toks) {
+    const story = r.soort === 'verhaal';
+    const title = story ? (r.titel || 'Zonder titel') : r.naam;
     const li = el('li', 'card');
     const head = el('div', 'card-head');
     const h = el('h2');
-    setHighlighted(h, r.naam, toks);
-    const t = el('time', null, fmt(r.createdAt));
-    t.dateTime = r.createdAt;
+    setHighlighted(h, title, toks);
+    const t = el('time', null, story ? fmtLongDay.format(ymdToDate(dayOf(r))) : fmt(r.createdAt));
+    t.dateTime = story ? dayOf(r) : r.createdAt;
     head.append(h, t);
     li.append(head);
+
+    if (!story && r.waar) {
+      const place = el('button', 'place');
+      place.type = 'button';
+      place.setAttribute('aria-label', 'Toon iedereen van ' + r.waar);
+      place.append(document.createTextNode('📍 '));
+      const pn = el('span');
+      setHighlighted(pn, r.waar, toks);
+      place.append(pn);
+      place.addEventListener('click', () => setPlaceFilter(r.waar));
+      li.append(place);
+    }
+
     if (r.notitie) {
       const p = el('p', 'note');
       setHighlighted(p, r.notitie, toks);
       li.append(p);
+      // Lange verhalen ingeklapt tonen (niet tijdens zoeken, dan wil je de treffer zien)
+      if (story && !toks.length && (r.notitie.length > 280 || r.notitie.split('\n').length > 4)) {
+        p.classList.add('clamp');
+        const more = el('button', 'more', 'Lees verder');
+        more.type = 'button';
+        more.addEventListener('click', () => {
+          const open = p.classList.toggle('clamp');
+          more.textContent = open ? 'Lees verder' : 'Minder tonen';
+        });
+        li.append(more);
+      }
     }
     if (Date.parse(r.updatedAt) - Date.parse(r.createdAt) > 60000) {
-      li.append(el('p', 'edited', 'Bewerkt ' + fmt(r.updatedAt)));
+      li.append(el('p', 'edited', 'Bijgewerkt ' + fmt(r.updatedAt)));
     }
     const actions = el('div', 'card-actions');
-    const add = el('button', null, 'Aanvullen');
-    add.type = 'button';
-    add.setAttribute('aria-label', 'Vul aan bij ' + r.naam);
-    add.addEventListener('click', () => openEditor(r.id, 'append'));
-    const edit = el('button', null, 'Bewerken');
-    edit.type = 'button';
-    edit.setAttribute('aria-label', 'Bewerk ' + r.naam);
-    edit.addEventListener('click', () => openEditor(r.id, 'edit'));
-    const del = el('button', 'del', 'Verwijderen');
-    del.type = 'button';
-    del.setAttribute('aria-label', 'Verwijder ' + r.naam);
-    del.addEventListener('click', () => deleteRecord(r.id));
-    actions.append(add, edit, del);
+    actions.append(
+      actionButton('Aanvullen', 'Vul aan: ' + title, () => openEditor(r.id, 'append')),
+      actionButton('Bewerken', 'Bewerk: ' + title, () => openEditor(r.id, 'edit')),
+      actionButton('Verwijderen', 'Verwijder: ' + title, () => deleteRecord(r.id), 'del')
+    );
     li.append(actions);
     return li;
   }
 
+  function setPlaceFilter(place) {
+    placeFilter = place;
+    $('search').value = '';
+    render();
+    window.scrollTo(0, 0);
+  }
+  $('place-filter-clear').addEventListener('click', () => setPlaceFilter(''));
+
   function render() {
+    const tab = viewState.tab;
+    const story = tab === 'verhaal';
     const q = $('search').value;
     const toks = C.tokens(q);
-    const alive = records.filter(r => !r.deleted);
-    const visible = alive.filter(r => C.matches(r, toks))
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
-    $('list').replaceChildren(...visible.map(r => renderCard(r, toks)));
+    const alive = records.filter(r => !r.deleted && r.soort === tab);
+    let visible = alive.filter(r => C.matches(r, toks));
+    if (!story && placeFilter) visible = visible.filter(r => C.fold(r.waar.trim()) === C.fold(placeFilter.trim()));
+
+    const nodes = [];
+    for (const g of arrange(visible, $('sort').value || SORTS[tab][0][0])) {
+      if (g.label) nodes.push(el('li', 'group-head', g.label + ' · ' + g.items.length));
+      for (const r of g.items) nodes.push(renderCard(r, toks));
+    }
+    $('list').replaceChildren(...nodes);
     $('search-clear').hidden = !q;
+    $('place-filter').hidden = story || !placeFilter;
+    $('place-filter-name').textContent = placeFilter;
 
     const n = alive.length;
-    $('count').textContent = toks.length
-      ? visible.length + ' van ' + n + (n === 1 ? ' persoon' : ' personen')
-      : n === 0 ? '' : n + (n === 1 ? ' persoon' : ' personen');
+    const noun = c => story ? (c === 1 ? ' verhaal' : ' verhalen') : (c === 1 ? ' persoon' : ' personen');
+    const filtered = toks.length || (!story && placeFilter);
+    $('count').textContent = !n ? '' : filtered ? visible.length + ' van ' + n + noun(n) : n + noun(n);
+    $('sort').parentElement.hidden = n < 2;
 
-    const empty = $('empty');
-    empty.hidden = visible.length > 0;
+    $('empty').hidden = visible.length > 0;
     if (!n) {
-      $('empty-title').textContent = 'Nog niemand opgeslagen';
-      $('empty-text').textContent = 'Tik op “Nieuw” en spreek in wie je net hebt ontmoet.';
+      $('empty-title').textContent = story ? 'Nog geen verhalen' : 'Nog niemand opgeslagen';
+      $('empty-text').textContent = story
+        ? 'Tik op “Inspreken” en vertel wat je hebt meegemaakt.'
+        : 'Tik op “Inspreken” en zeg bijvoorbeeld: “Jan de Vries, ontmoet op de borrel, werkt bij een bank.”';
     } else if (!visible.length) {
       $('empty-title').textContent = 'Niets gevonden';
-      $('empty-text').textContent = 'Geen naam of notitie met “' + q.trim() + '”.';
+      $('empty-text').textContent = q.trim() ? 'Niets met “' + q.trim() + '”.' : 'Niets op deze plek.';
     }
     if (!storageOk) {
       $('sync-banner').hidden = false;
-      $('sync-banner').textContent = 'Let op: opslaan op dit apparaat is geblokkeerd (privémodus?). Notities gaan verloren bij sluiten.';
+      $('sync-banner').textContent = 'Let op: opslaan op dit apparaat is geblokkeerd (privémodus?). Alles gaat verloren bij sluiten.';
     }
   }
 
@@ -883,11 +1168,11 @@
   async function deleteRecord(id) {
     const r = records.find(x => x.id === id);
     if (!r) return;
-    const ok = await confirmDialog('Verwijderen?', '“' + r.naam + '” en de notitie worden verwijderd.', 'Verwijder', 'danger');
-    if (!ok) return;
+    const what = r.soort === 'verhaal' ? '“' + (r.titel || 'dit verhaal') + '”' : '“' + r.naam + '” en de notitie';
+    if (!(await confirmDialog('Verwijderen?', what + ' worden verwijderd.', 'Verwijder', 'danger'))) return;
     const backup = Object.assign({}, r);
     // Soft delete: tombstone blijft bestaan voor synchronisatie, inhoud wordt gewist.
-    Object.assign(r, { deleted: true, naam: '', notitie: '', updatedAt: new Date().toISOString() });
+    Object.assign(r, { deleted: true, naam: '', titel: '', waar: '', notitie: '', updatedAt: new Date().toISOString() });
     persist();
     render();
     scheduleAutoSync();
@@ -902,54 +1187,74 @@
     });
   }
 
-  // ---------- Editor ----------
+  // ---------- Editor (contact en verhaal) ----------
 
   let editingId = null;
-  let editMode = 'new'; // 'new' | 'edit' | 'append'
-  const fNaam = $('f-naam');
-  const fNotitie = $('f-notitie');
+  let editMode = 'new';    // 'new' | 'edit' | 'append'
+  let editKind = 'contact'; // 'contact' | 'verhaal'
+  let editOrig = '';
+  const fNaam = $('f-naam'), fWaar = $('f-waar'), fTitel = $('f-titel'), fDatum = $('f-datum'), fNotitie = $('f-notitie');
   const nameMic = document.querySelector('.mic[data-target="f-naam"]');
-  const fmtDay = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+  const textMic = document.querySelector('.mic[data-target="f-notitie"]');
 
-  function openEditor(id, mode) {
+  const editSnapshot = () => JSON.stringify([fNaam.value, fWaar.value, fTitel.value, fDatum.value, fNotitie.value]);
+  const isDirty = () => editSnapshot() !== editOrig;
+
+  /** Eerdere plekken als suggesties, meest gebruikte eerst. */
+  function fillPlaceSuggestions() {
+    const count = new Map();
+    for (const r of records) {
+      if (r.deleted || r.soort !== 'contact' || !r.waar.trim()) continue;
+      const k = r.waar.trim();
+      count.set(k, (count.get(k) || 0) + 1);
+    }
+    const list = [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50);
+    $('waar-list').replaceChildren(...list.map(([v]) => { const o = el('option'); o.value = v; return o; }));
+  }
+
+  function openEditor(id, mode, kind, opts) {
     stopDictation(true);
     const r = id ? records.find(x => x.id === id && !x.deleted) : null;
     editingId = r ? r.id : null;
+    editKind = r ? r.soort : (kind === 'verhaal' ? 'verhaal' : 'contact');
     editMode = r ? (mode === 'append' ? 'append' : 'edit') : 'new';
+    const story = editKind === 'verhaal';
     const append = editMode === 'append';
-    $('edit-title').textContent = append ? 'Aanvullen' : r ? 'Bewerken' : 'Nieuwe notitie';
-    fNaam.value = r ? r.naam : '';
+
+    $('row-naam').hidden = story;
+    $('row-waar').hidden = story || append;
+    $('row-titel').hidden = !story;
+    $('row-datum').hidden = !story || append;
+    $('edit-title').textContent = append ? 'Aanvullen' : r ? 'Bewerken' : story ? 'Nieuw verhaal' : 'Nieuw contact';
+
+    fNaam.value = r && !story ? r.naam : '';
     fNaam.readOnly = append;
     nameMic.hidden = append;
+    fTitel.value = r && story ? r.titel : '';
+    fTitel.readOnly = append;
+    fWaar.value = r && !story ? r.waar : '';
+    fDatum.value = story ? ((r && r.datum) || today()) : '';
+    fDatum.max = today();
     fNotitie.value = r && !append ? r.notitie : '';
-    fNotitie.placeholder = append ? 'Wat wil je toevoegen?' : 'Waar ontmoet, wat doet diegene, iets om te onthouden…';
-    $('label-notitie').textContent = append ? 'Aanvulling' : 'Notitie';
+    fNotitie.classList.toggle('tall', story);
+    fNotitie.placeholder = append
+      ? (story ? 'Wat wil je eraan toevoegen?' : 'Wat wil je toevoegen?')
+      : story ? 'Vertel wat er gebeurde…' : 'Wat doet diegene, iets om te onthouden…';
+    $('label-notitie').textContent = append ? 'Aanvulling' : story ? 'Verhaal' : 'Notitie';
     $('existing').hidden = !(append && r.notitie);
     $('existing-text').textContent = append ? r.notitie : '';
-    fNaam.dataset.orig = fNaam.value;
-    fNotitie.dataset.orig = fNotitie.value;
+    editOrig = editSnapshot();
     $('edit-error').hidden = true;
-    $('summarize-status').textContent = '';
     $('edit-meta').textContent = append
-      ? 'De aanvulling komt met de datum van vandaag onder de bestaande notitie.'
-      : r ? 'Toegevoegd ' + fmt(r.createdAt) : 'Datum en tijd worden automatisch toegevoegd.';
+      ? 'De aanvulling komt met de datum van vandaag onder de bestaande tekst.'
+      : r ? 'Toegevoegd ' + fmt(r.createdAt) : story ? '' : 'Datum en tijd worden automatisch toegevoegd.';
     $('speech-hint').hidden = !!SR;
+    fillPlaceSuggestions();
     showView('edit');
-    if (!r) setTimeout(() => fNaam.focus(), 50);
+    if (opts && opts.quick) startDictation(textMic, { quick: true });
+    else if (!r) setTimeout(() => (story ? fNotitie : fNaam).focus(), 50);
+    else if (append) setTimeout(() => fNotitie.focus(), 50);
   }
-
-  const isDirty = () => fNaam.value !== fNaam.dataset.orig || fNotitie.value !== fNotitie.dataset.orig;
-
-  /** Knop "Opschonen": hele notitieveld netjes maken, met ongedaan maken. */
-  function cleanField() {
-    const before = fNotitie.value;
-    if (!before.trim()) { toast('Nog geen tekst om op te schonen'); return; }
-    const after = C.cleanupText(before);
-    if (!after || after === before.trim()) { toast('De tekst was al netjes'); return; }
-    fNotitie.value = after;
-    toast('Opgeschoond', { label: 'Ongedaan maken', fn: () => { fNotitie.value = before; } });
-  }
-  $('btn-summarize').addEventListener('click', cleanField);
 
   async function cancelEditor() {
     stopDictation(true);
@@ -964,30 +1269,53 @@
     field.focus();
   }
 
+  /** Titel uit de eerste woorden van het verhaal. */
+  function autoTitle(text) {
+    const first = text.replace(/^[-•*]\s*/, '').split(/(?<=[.!?])\s|\n/)[0].replace(/[.!?]+$/, '').trim();
+    const words = first.split(/\s+/).filter(Boolean);
+    if (!words.length) return 'Verhaal van ' + fmtDay.format(new Date());
+    return words.slice(0, 7).join(' ') + (words.length > 7 ? '…' : '');
+  }
+
   function saveEditor() {
     stopDictation(true);
-    const naam = fNaam.value.replace(/\s+/g, ' ').trim();
-    const notitie = fNotitie.value.trim();
     const now = new Date().toISOString();
+    const text = fNotitie.value.trim();
     const existing = editingId && records.find(x => x.id === editingId);
+    const story = editKind === 'verhaal';
+
     if (editMode === 'append' && existing) {
-      if (!notitie) return showEditError('Spreek of typ eerst een aanvulling in.', fNotitie);
+      if (!text) return showEditError('Spreek of typ eerst een aanvulling in.', fNotitie);
       const stamp = fmtDay.format(new Date());
-      existing.notitie = existing.notitie ? existing.notitie + '\n\n' + stamp + ':\n' + notitie : notitie;
+      existing.notitie = existing.notitie ? existing.notitie + '\n\n' + stamp + ':\n' + text : text;
       existing.updatedAt = now;
-    } else if (!naam) {
-      return showEditError('Vul een naam in.', fNaam);
-    } else if (existing) {
-      if (existing.naam !== naam || existing.notitie !== notitie || existing.deleted) {
-        Object.assign(existing, { naam, notitie, deleted: false, updatedAt: now });
+    } else if (story) {
+      if (!text) return showEditError('Vertel of typ eerst je verhaal.', fNotitie);
+      const fields = {
+        titel: fTitel.value.replace(/\s+/g, ' ').trim() || autoTitle(text),
+        datum: /^\d{4}-\d{2}-\d{2}$/.test(fDatum.value) ? fDatum.value : today(),
+        notitie: text
+      };
+      if (existing) {
+        if (existing.titel !== fields.titel || existing.datum !== fields.datum || existing.notitie !== fields.notitie) Object.assign(existing, fields, { updatedAt: now });
+      } else {
+        records.push(Object.assign({ id: newId(), soort: 'verhaal', naam: '', waar: '', createdAt: now, updatedAt: now, deleted: false }, fields));
       }
     } else {
-      records.push({ id: newId(), naam, notitie, createdAt: now, updatedAt: now, deleted: false });
+      const naam = fNaam.value.replace(/\s+/g, ' ').trim();
+      if (!naam) return showEditError('Vul een naam in.', fNaam);
+      const fields = { naam, waar: fWaar.value.replace(/\s+/g, ' ').trim(), notitie: text };
+      if (existing) {
+        if (existing.naam !== naam || existing.waar !== fields.waar || existing.notitie !== text) Object.assign(existing, fields, { updatedAt: now });
+      } else {
+        records.push(Object.assign({ id: newId(), soort: 'contact', titel: '', datum: '', createdAt: now, updatedAt: now, deleted: false }, fields));
+      }
     }
     if (!persist()) {
-      dialog('Opslaan mislukt', 'De opslag van dit apparaat is vol of geblokkeerd. Exporteer je notities als JSON via Instellingen.', [{ label: 'OK', value: true, kind: 'primary' }]);
+      infoDialog('Opslaan mislukt', 'De opslag van dit apparaat is vol of geblokkeerd. Exporteer je gegevens als JSON via Instellingen.');
       return;
     }
+    if (viewState.tab !== editKind) setTab(editKind);
     $('search').value = '';
     showView('list');
     render();
@@ -995,12 +1323,26 @@
     scheduleAutoSync();
   }
 
-  $('btn-new').addEventListener('click', () => openEditor(null, 'new'));
+  /** Knop "Opschonen": hele tekstveld netjes maken, met ongedaan maken. */
+  function cleanField() {
+    const before = fNotitie.value;
+    if (!before.trim()) { toast('Nog geen tekst om op te schonen'); return; }
+    const after = editKind === 'verhaal' ? C.cleanupStory(before) : C.cleanupText(before);
+    if (!after || after === before.trim()) { toast('De tekst was al netjes'); return; }
+    fNotitie.value = after;
+    toast('Opgeschoond', { label: 'Ongedaan maken', fn: () => { fNotitie.value = before; } });
+  }
+
+  $('btn-new').addEventListener('click', () => openEditor(null, 'new', viewState.tab));
+  $('btn-quick').addEventListener('click', () => openEditor(null, 'new', viewState.tab, { quick: true }));
   $('edit-cancel').addEventListener('click', cancelEditor);
   $('edit-save').addEventListener('click', saveEditor);
   $('edit-save-top').addEventListener('click', saveEditor);
-  fNaam.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fNotitie.focus(); } });
-  for (const f of [fNaam, fNotitie]) f.addEventListener('input', () => { $('edit-error').hidden = true; });
+  $('btn-summarize').addEventListener('click', cleanField);
+  fNaam.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); (fWaar.closest('[hidden]') ? fNotitie : fWaar).focus(); } });
+  fWaar.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fNotitie.focus(); } });
+  fTitel.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fNotitie.focus(); } });
+  for (const f of [fNaam, fWaar, fTitel, fNotitie]) f.addEventListener('input', () => { $('edit-error').hidden = true; });
 
   // ---------- Spraakherkenning ----------
 
@@ -1016,8 +1358,7 @@
     btn.setAttribute('aria-pressed', String(recording));
     btn.innerHTML = recording ? STOP_SVG : MIC_SVG;
     btn.append(el('span', null, recording ? 'Stop' : 'Spreek'));
-    const which = btn.dataset.target === 'f-naam' ? 'Naam' : 'Notitie';
-    btn.setAttribute('aria-label', recording ? 'Stop met inspreken' : which + ' inspreken');
+    btn.setAttribute('aria-label', recording ? 'Stop met inspreken' : (btn === nameMic ? 'Naam inspreken' : 'Tekst inspreken'));
   }
   document.querySelectorAll('.mic').forEach(b => setMicState(b, false));
 
@@ -1035,8 +1376,7 @@
   function joinResults(results) {
     let out = '';
     for (let i = 0; i < results.length; i++) {
-      const s = results[i][0].transcript;
-      const sTrim = s.trim();
+      const sTrim = results[i][0].transcript.trim();
       if (!sTrim) continue;
       if (out && sTrim.startsWith(out.trim())) out = sTrim;
       else out = out ? out.replace(/\s+$/, '') + ' ' + sTrim : sTrim;
@@ -1044,13 +1384,35 @@
     return out;
   }
 
-  function toggleDictation(btn) {
-    const field = $(btn.dataset.target);
-    if (dict) {
-      const same = dict.btn === btn;
-      stopDictation(false);
-      if (same) return;
+  /** Na het inspreken: naam/plek herkennen (snel inspreken) en de tekst opschonen. Met ongedaan maken. */
+  function afterDictation(rec, field, base, sep, spoken) {
+    if (rec.skipClean || !spoken || field.value !== base + sep + spoken) return; // tussendoor zelf getypt: niet aankomen
+    const raw = field.value, prevNaam = fNaam.value, prevWaar = fWaar.value;
+    let text = spoken;
+    let filled = false;
+    if (field === fNaam) {
+      text = spoken.replace(/[.!?,;:]+$/, '').trim();
+    } else if (field === fNotitie) {
+      if (rec.quick && editKind === 'contact') {
+        if (!fNaam.value.trim()) { const ex = C.extractName(text); if (ex) { fNaam.value = ex.naam; text = ex.rest; filled = true; } }
+        if (!fWaar.value.trim()) { const pl = C.extractPlace(text); if (pl) { fWaar.value = pl; filled = true; } }
+      }
+      if (settings.autoClean !== false) {
+        const c = editKind === 'verhaal' ? C.cleanupStory(text) : C.cleanupText(text);
+        if (c) text = c;
+      }
     }
+    if (text === spoken && !filled) return;
+    const glue = !base || !text ? '' : /\n$/.test(base) ? '' : text.startsWith('- ') ? '\n' : sep;
+    field.value = base + glue + text;
+    toast(filled ? 'Naam/plek ingevuld – even controleren' : 'Ingesproken tekst opgeschoond', {
+      label: 'Ongedaan maken',
+      fn: () => { field.value = raw; fNaam.value = prevNaam; fWaar.value = prevWaar; }
+    });
+  }
+
+  function startDictation(btn, opts) {
+    const field = $(btn.dataset.target);
     if (!SR) { showSpeechHint('Spraakherkenning is hier niet beschikbaar.'); field.focus(); return; }
     let rec;
     try { rec = new SR(); } catch (e) { showSpeechHint('Spraakherkenning kon niet starten.'); field.focus(); return; }
@@ -1058,6 +1420,7 @@
     rec.interimResults = true;
     rec.continuous = field.tagName === 'TEXTAREA';
     rec.maxAlternatives = 1;
+    rec.quick = !!(opts && opts.quick);
 
     const base = field.value;
     const sep = base && !/\s$/.test(base) ? ' ' : '';
@@ -1067,39 +1430,43 @@
       field.value = spoken ? base + sep + spoken : base;
       if (field.tagName === 'TEXTAREA') field.scrollTop = field.scrollHeight;
     };
-    // Na afloop (alle eindresultaten binnen): alleen het nieuw ingesproken stuk opschonen.
-    const autoClean = () => {
-      if (rec.skipClean || field !== fNotitie || settings.autoClean === false || !spoken) return;
-      if (field.value !== base + sep + spoken) return; // tussendoor zelf getypt: niet aankomen
-      const cleaned = C.cleanupText(spoken);
-      if (!cleaned || cleaned === spoken.trim()) return;
-      const glue = !base ? '' : /\n$/.test(base) ? '' : cleaned.startsWith('- ') ? '\n' : sep;
-      const raw = field.value;
-      field.value = base + glue + cleaned;
-      toast('Ingesproken tekst opgeschoond', { label: 'Ongedaan maken', fn: () => { field.value = raw; } });
-    };
     rec.onerror = e => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') showSpeechHint('Geen toegang tot spraakherkenning of microfoon.');
       else if (e.error === 'audio-capture') showSpeechHint('Geen microfoon gevonden.');
       else if (e.error === 'network') showSpeechHint('Spraakherkenning heeft internet nodig.');
       else if (e.error === 'no-speech') toast('Niets gehoord. Probeer het nog eens.');
-      if (dict && dict.rec === rec) finishDictation();
     };
     rec.onend = () => {
-      autoClean();
+      afterDictation(rec, field, base, sep, spoken);
       if (dict && dict.rec === rec) finishDictation();
+      // Zelf gestopt (stilte/tijdslimiet) terwijl je nog aan het vertellen was
+      if (!rec.userStopped && !rec.skipClean && field === fNotitie && spoken && editKind === 'verhaal') {
+        toast('Gestopt met luisteren. Tik op Spreek om verder te vertellen.');
+      }
     };
 
     dict = { rec, btn, field };
     setMicState(btn, true);
-    setListening('Luisteren… tik op Stop als je klaar bent.');
+    setListening(field === fNotitie && editKind === 'verhaal'
+      ? 'Luisteren… vertel rustig. Tik op Stop als je klaar bent.'
+      : 'Luisteren… tik op Stop als je klaar bent.');
     try { rec.start(); } catch (e) { finishDictation(); showSpeechHint('Spraakherkenning kon niet starten.'); }
+  }
+
+  function toggleDictation(btn) {
+    if (dict) {
+      const same = dict.btn === btn;
+      stopDictation(false);
+      if (same) return;
+    }
+    startDictation(btn, null);
   }
 
   /** skipClean: true bij opslaan/weggaan, zodat er na afloop niets meer aan het veld verandert. */
   function stopDictation(skipClean) {
     if (!dict) return;
     dict.rec.skipClean = !!skipClean;
+    dict.rec.userStopped = true;
     try { dict.rec.stop(); } catch (e) { /* al gestopt */ }
     finishDictation();
   }
@@ -1111,8 +1478,191 @@
   }
 
   document.querySelectorAll('.mic').forEach(b => b.addEventListener('click', () => toggleDictation(b)));
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopDictation(false); });
   if (!SR) showSpeechHint('');
+
+  // ---------- Pincode ----------
+
+  const subtle = window.crypto && crypto.subtle;
+  let pinData = storeJson(KEY_PIN, null); // { salt, hash, len, iter }
+  let lockMode = null;   // 'unlock' | 'set1' | 'set2'
+  let pinEntry = '';
+  let pinFirst = '';
+  let hiddenAt = 0;
+  let pinBusy = false;
+
+  const toB64 = bytes => btoa(String.fromCharCode.apply(null, bytes));
+  const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+  async function hashPin(pin, salt, iter) {
+    const key = await subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
+    const bits = await subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: fromB64(salt), iterations: iter }, key, 256);
+    return toB64(new Uint8Array(bits));
+  }
+
+  function buildKeypad() {
+    const pad = $('keypad');
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'];
+    for (const k of keys) {
+      const b = el('button', k === 'del' || k === 'ok' ? 'fn' : null, k === 'del' ? '⌫' : k === 'ok' ? '✓' : k);
+      b.type = 'button';
+      b.dataset.key = k;
+      b.setAttribute('aria-label', k === 'del' ? 'Wis cijfer' : k === 'ok' ? 'Bevestig' : k);
+      b.addEventListener('click', () => pinKey(k));
+      pad.append(b);
+    }
+  }
+  buildKeypad();
+
+  function renderDots(shake) {
+    const max = lockMode === 'unlock' && pinData ? pinData.len : Math.max(4, pinEntry.length);
+    const dots = $('pin-dots');
+    dots.replaceChildren(...Array.from({ length: max }, (_, i) => el('i', i < pinEntry.length ? 'on' : null)));
+    if (shake) { dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake'); }
+    const ok = $('keypad').querySelector('[data-key="ok"]');
+    ok.disabled = lockMode === 'unlock' || pinEntry.length < 4;
+  }
+
+  function showLock(mode) {
+    lockMode = mode;
+    pinEntry = '';
+    $('lock-title').textContent = mode === 'unlock' ? 'Voer je pincode in' : mode === 'set1' ? 'Kies een pincode (4–6 cijfers)' : 'Herhaal je pincode';
+    $('lock-msg').textContent = '';
+    $('lock-cancel').hidden = mode === 'unlock';
+    $('lock-forgot').hidden = mode !== 'unlock';
+    $('lock').hidden = false;
+    if (mode === 'unlock') { document.body.classList.add('locked'); stopDictation(false); }
+    renderDots(false);
+    checkLockout();
+  }
+
+  function hideLock() {
+    $('lock').hidden = true;
+    lockMode = null;
+    pinEntry = '';
+    document.body.classList.remove('locked');
+  }
+
+  /** Na 5 foute pogingen een oplopende wachttijd. */
+  function lockoutLeft() {
+    const f = storeJson(KEY_PINFAIL, { count: 0, until: 0 });
+    return Math.max(0, f.until - Date.now());
+  }
+  function checkLockout() {
+    const left = lockoutLeft();
+    if (lockMode === 'unlock' && left > 0) {
+      $('lock-msg').textContent = 'Te vaak fout. Probeer het over ' + Math.ceil(left / 1000) + ' s opnieuw.';
+      setTimeout(checkLockout, 1000);
+    } else if (lockMode === 'unlock' && /Te vaak/.test($('lock-msg').textContent)) {
+      $('lock-msg').textContent = '';
+    }
+  }
+
+  async function pinKey(k) {
+    if (!lockMode || pinBusy) return;
+    if (k === 'del') { pinEntry = pinEntry.slice(0, -1); renderDots(false); return; }
+    if (k === 'ok') { if (lockMode !== 'unlock' && pinEntry.length >= 4) submitPin(); return; }
+    if (lockMode === 'unlock' && lockoutLeft() > 0) return;
+    const max = lockMode === 'unlock' && pinData ? pinData.len : 6;
+    if (pinEntry.length >= max) return;
+    pinEntry += k;
+    $('lock-msg').textContent = '';
+    renderDots(false);
+    if (lockMode === 'unlock' && pinEntry.length === max) submitPin();
+  }
+
+  async function submitPin() {
+    pinBusy = true;
+    try {
+      if (lockMode === 'unlock') {
+        const ok = (await hashPin(pinEntry, pinData.salt, pinData.iter)) === pinData.hash;
+        if (ok) {
+          storeSet(KEY_PINFAIL, JSON.stringify({ count: 0, until: 0 }));
+          hideLock();
+          return;
+        }
+        const f = storeJson(KEY_PINFAIL, { count: 0, until: 0 });
+        f.count++;
+        if (f.count >= 5) f.until = Date.now() + 30000 * Math.pow(2, f.count - 5);
+        storeSet(KEY_PINFAIL, JSON.stringify(f));
+        pinEntry = '';
+        renderDots(true);
+        $('lock-msg').textContent = 'Onjuiste pincode.';
+        checkLockout();
+      } else if (lockMode === 'set1') {
+        pinFirst = pinEntry;
+        showLock('set2');
+      } else if (lockMode === 'set2') {
+        if (pinEntry !== pinFirst) {
+          showLock('set1');
+          $('lock-msg').textContent = 'De pincodes kwamen niet overeen. Probeer opnieuw.';
+          renderDots(true);
+          return;
+        }
+        const salt = toB64(crypto.getRandomValues(new Uint8Array(16)));
+        const iter = 150000;
+        const data = { salt, iter, len: pinEntry.length, hash: await hashPin(pinEntry, salt, iter) };
+        if (!storeSet(KEY_PIN, JSON.stringify(data))) { $('lock-msg').textContent = 'Opslaan mislukt.'; return; }
+        pinData = data;
+        pinFirst = '';
+        hideLock();
+        renderPinStatus();
+        toast('Pincode ingesteld');
+      }
+    } finally {
+      pinBusy = false;
+    }
+  }
+
+  async function forgotPin() {
+    const ok = await confirmDialog('Pincode vergeten?',
+      'Zonder pincode kom je er niet meer in. Je kunt alles op dit apparaat wissen (ook het GitHub-token) en daarna terugzetten: token opnieuw invullen en Synchroniseer, of een JSON-export importeren.',
+      'Alles wissen', 'danger');
+    if (!ok) return;
+    try {
+      for (const k of Object.keys(localStorage)) if (k.startsWith('wiewasdat.')) localStorage.removeItem(k);
+    } catch (e) { /* geblokkeerd */ }
+    location.reload();
+  }
+
+  function renderPinStatus() {
+    $('pin-status').textContent = pinData ? 'Pincode staat aan (' + pinData.len + ' cijfers).' : 'Pincode staat uit.';
+    $('pin-set').textContent = pinData ? 'Pincode wijzigen' : 'Pincode instellen';
+    $('pin-off').hidden = !pinData;
+  }
+
+  $('pin-set').addEventListener('click', () => {
+    if (!subtle) { infoDialog('Niet beschikbaar', 'Een pincode werkt alleen als de app via https geopend is (zoals op GitHub Pages).'); return; }
+    showLock('set1');
+  });
+  $('pin-off').addEventListener('click', async () => {
+    if (!(await confirmDialog('Pincode uitzetten?', 'De app opent daarna zonder pincode.', 'Uitzetten', 'danger'))) return;
+    try { localStorage.removeItem(KEY_PIN); } catch (e) { /* */ }
+    pinData = null;
+    renderPinStatus();
+    toast('Pincode staat uit');
+  });
+  $('lock-cancel').addEventListener('click', () => { pinFirst = ''; hideLock(); });
+  $('lock-forgot').addEventListener('click', forgotPin);
+  document.addEventListener('keydown', e => {
+    if (!lockMode || !$('dialog').hidden) return;
+    if (/^[0-9]$/.test(e.key)) pinKey(e.key);
+    else if (e.key === 'Backspace') pinKey('del');
+    else if (e.key === 'Enter') pinKey('ok');
+  });
+
+  // Afdekken in de app-wisselaar; na 30 s weg opnieuw pincode vragen.
+  // coverOnly: het slot werd alleen als afdekking getoond (app was al ontgrendeld).
+  let coverOnly = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopDictation(false);
+      hiddenAt = Date.now();
+      if (pinData && !lockMode) { showLock('unlock'); coverOnly = true; }
+    } else {
+      if (coverOnly && lockMode === 'unlock' && pinEntry === '' && Date.now() - hiddenAt < LOCK_AFTER_MS) hideLock();
+      coverOnly = false;
+    }
+  });
 
   // ---------- Instellingen ----------
 
@@ -1122,8 +1672,11 @@
     $('s-path').value = settings.path || 'contacten.json';
     $('s-auto').checked = !!settings.autoSync;
     $('s-summ').checked = settings.autoClean !== false;
-    const total = records.filter(r => !r.deleted).length;
-    $('about').textContent = total + (total === 1 ? ' persoon' : ' personen') + ' opgeslagen op dit apparaat.';
+    const alive = records.filter(r => !r.deleted);
+    const nc = alive.filter(r => r.soort === 'contact').length;
+    const nv = alive.length - nc;
+    $('about').textContent = nc + (nc === 1 ? ' persoon' : ' personen') + ' en ' + nv + (nv === 1 ? ' verhaal' : ' verhalen') + ' op dit apparaat.';
+    renderPinStatus();
     renderSyncStatus();
     showView('settings');
   }
@@ -1216,7 +1769,7 @@
       storeSet(KEY_LASTSYNC, new Date().toISOString());
       lastError = '';
       if (C.serialize(records) !== C.serialize(res.records)) syncAgain = true;
-      render();
+      if (!views.list.hidden) render();
       if (manual) {
         const parts = [];
         if (res.created) parts.push('back-upbestand aangemaakt');
@@ -1239,7 +1792,7 @@
 
   async function exportJson() {
     const content = C.serialize(records);
-    const name = 'contacten-' + new Date().toISOString().slice(0, 10) + '.json';
+    const name = 'logboek-' + today() + '.json';
     const file = new File([content], name, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file], title: name }); return; }
@@ -1263,10 +1816,10 @@
       const changed = C.countChanges(before, records);
       persist();
       render();
-      toast(changed ? changed + ' notitie(s) toegevoegd of bijgewerkt' : 'Niets nieuws in dit bestand');
+      toast(changed ? changed + ' item(s) toegevoegd of bijgewerkt' : 'Niets nieuws in dit bestand');
       if (changed) scheduleAutoSync();
     } catch (e) {
-      dialog('Importeren mislukt', e instanceof C.AppError ? e.message : 'Het bestand kon niet worden gelezen.', [{ label: 'OK', value: true, kind: 'primary' }]);
+      infoDialog('Importeren mislukt', e instanceof C.AppError ? e.message : 'Het bestand kon niet worden gelezen.');
     }
   }
 
@@ -1331,8 +1884,10 @@
 
   // ---------- Start ----------
 
-  render();
+  setTab(viewState.tab);
+  showView('list');
   renderSyncStatus();
+  if (pinData) showLock('unlock');
   if (settings.autoSync && settings.repo && settings.token) setTimeout(() => runSync(false), 800);
   window.addEventListener('online', () => { if (lastError) scheduleAutoSync(); });
 })();
